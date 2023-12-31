@@ -1,3 +1,4 @@
-EMULATED_ACCELERATOR_NAME: acme
-EMULATED_ACCELERATOR_REPO: https://gitlab.bsc.es/hwdesign/frameworks/meep_openpiton.git
-EMULATED_ACCELERATOR_SHA: b563b46f7fd043eafa22ba8810de42d6736be562
+EMULATED_ACCELERATOR_NAME: lagarto_ka
+EMULATED_ACCELERATOR_REPO: https://gitlab.bsc.es/hwdesign/rtl/core-tile/lagarto_ka-tile.git
+EMULATED_ACCELERATOR_SHA:  f4430afb3c5aec536ffbe41c7fdd86dc537b893e
+
