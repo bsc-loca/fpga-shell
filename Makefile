@@ -24,7 +24,7 @@ YAML_FILE    =  $(ROOT_DIR)/.gitlab-ci.yml
 PROJECT_DIR  =  $(ROOT_DIR)/project
 BINARIES_DIR =  $(ROOT_DIR)/binaries
 # taking default Xilinx install path if not propagated from environment var
-VIVADO_VER    ?= 2021.2
+VIVADO_VER    ?= 2023.2
 XILINX_VIVADO ?= /opt/Xilinx/Vivado/$(VIVADO_VER)
 LD_PRELOAD_PATH = LD_PRELOAD=/lib/x86_64-linux-gnu/libudev.so.1
 VIVADO_XLNX   :=   $(XILINX_VIVADO)/bin/vivado
