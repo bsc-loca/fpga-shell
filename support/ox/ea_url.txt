@@ -1,0 +1,3 @@
+EMULATED_ACCELERATOR_NAME: ox
+EMULATED_ACCELERATOR_REPO: https://gitlab.bsc.es/hwdesign/rtl/core-tile/lagarto_ox_tile.git
+EMULATED_ACCELERATOR_SHA: b5de81975ab5ae327ccaffbc37bf40d4cf27ddb3

@@ -1,0 +1,21 @@
+# Use this file to configure your system. You can configure your system variables,
+# the tags for the runners, the specific scripts for your own EA to work, etc.
+# The FPGA board is also defined here [u280, u55c]
+# TODO: Do make initialize FPGA_BOARD to set up the proper board within the Shell
+
+.setup:
+  variables:
+    EA: ox
+    FREQ: 25
+    FPGA_BOARD: u55c
+    GIT_SUBMODULE_STRATEGY: recursive
+    NUMBER_OF_JOBS: "8"
+    LINUX_IMAGE: /home/fpga-runnerMEEP/drac-linux/fw_payload_${FREQ}mhz.bin
+    FPGA_LOG_TEST_BUILDROOT: fpga_test_buildroot_${EA}_${FPGA_BOARD}.log
+
+.fpga_test:
+  before_script:
+    - git clone --recurse-submodules https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.bsc.es/hwdesign/fpga/integration-lab/fpga-tools
+    - ./fpga-tools/fpga/build_pcie_drivers.sh
+  script:
+    - ./fpga-tools/boot_riscv/boot_dvino.sh $LINUX_IMAGE
