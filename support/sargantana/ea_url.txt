@@ -1,4 +1,4 @@
 EMULATED_ACCELERATOR_NAME: sargantana
-EMULATED_ACCELERATOR_REPO: https://gitlab.bsc.es/drac/drac-inorder.git
-EMULATED_ACCELERATOR_SHA: 626fd5e60f334dbd41a91c262f0ffce2a1cd56fb
+EMULATED_ACCELERATOR_REPO: https://gitlab.bsc.es/hwdesign/rtl/core-tile/sargantana_tile.git
+EMULATED_ACCELERATOR_SHA: 8424b2783f438d4f0abd37e4c86300b8aa511f78
 
