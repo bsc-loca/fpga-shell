@@ -15,7 +15,7 @@
 
 include:
   - local: cicd/ea_conf.yml
-  - local: support/lagarto_ka/setup.yml
+  - local: support/sargantana/setup.yml
 
 # The workflow includes all the necessary rules to run all the jobs in this .gitlab-ci.yml.
 # The pipeline ca be trigger for:
@@ -157,10 +157,9 @@ bitstream:
   script:
     - make ci_bitstream
   after_script:
-    # The UTC datetime when the pipeline was created
-    - date_format="$(date -d "$CI_COMMIT_TIMESTAMP" +"$DESIRED_FORMAT")"
+    - uuid_format="$(uuid)"   
     - make clean_implementation
-    - mv bitstream/system.bit bitstream/${date_format}_${EA}_${FPGA_BOARD}.bit
+    - mv bitstream/system.bit bitstream/${uuid_format}_${EA}_${FPGA_BOARD}.bit
     - echo -e "Artifacts:"; ls bitstream
     # Store the Job ID to identify later the path to the bitstream artifact
     - echo BS_CI_JOB_ID_${EA}_u55c=$CI_JOB_ID >> gen_bitstream.env
@@ -224,9 +223,7 @@ fpga-test-linux:
     - $FPGA_BOARD
   before_script:
     - !reference [.fpga_test, before_script]
-    # The UTC datetime when the pipeline was created
-    - date_format="$(date -d "$CI_COMMIT_TIMESTAMP" +"$DESIRED_FORMAT")"
-    - export BITSTREAM=bitstream/${date_format}_${EA}_${FPGA_BOARD}.bit
+    - export BITSTREAM=bitstream/*.bit
   script:
     # The EA script should provide the right script and the right binary
     - ./fpga-tools/fpga/load-bitstream-onic.sh qdma $BITSTREAM

@@ -1,5 +1,5 @@
-EMULATED_ACCELERATOR_NAME: ox
-EMULATED_ACCELERATOR_REPO: https://gitlab.bsc.es/hwdesign/rtl/core-tile/lagarto_ox_tile.git
-EMULATED_ACCELERATOR_SHA: b5de81975ab5ae327ccaffbc37bf40d4cf27ddb3
+EMULATED_ACCELERATOR_NAME: sargantana
+EMULATED_ACCELERATOR_REPO: https://gitlab.bsc.es/hwdesign/rtl/core-tile/sargantana_tile.git
+EMULATED_ACCELERATOR_SHA: 60330bacb87a385c6fd010245937a0f69b5c17b5
 
 
