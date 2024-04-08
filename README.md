@@ -6,7 +6,7 @@
 
 ## Publication
 
-Makinote has been published in ACM RAPIDO '2024: Elias Perdomo, Alexander Kropotov, Francelly Katherine Cano Ladino, Syed Zafar, Teresa Cervero, Xavier Martorell Bofill, and Behzad Salami. "Makinote: An FPGA-Based HW/SW Platform for Pre-Silicon Emulation of RISC-V Designs". In Proceedings of the 16th Workshop on Rapid Simulation and Performance Evaluation for Design (RAPIDO '24). Association for Computing Machinery, New York, NY, USA, 29–34. January 2024. https://doi.org/10.1145/3642921.3642928
+Makinote has been published in ACM RAPIDO '2024: Elias Perdomo, Alexander Kropotov, Francelly Katherine Cano Ladino, Syed Zafar, Teresa Cervero, Xavier Martorell Bofill, and Behzad Salami. "Makinote: An FPGA-Based HW/SW Platform for Pre-Silicon Emulation of RISC-V Designs". This paper is presented in the proceedings of the 16th Workshop on Rapid Simulation and Performance Evaluation for Design (RAPIDO '24), held by the Association for Computing Machinery (ACM) in New York, NY, USA, during January 29th to 34th, 2024. https://doi.org/10.1145/3642921.3642928
 
 If you use our Makinote HW or SW tools anyhow in your research please reference our AMC paper mentioned above and send us a citation of your work.
 
