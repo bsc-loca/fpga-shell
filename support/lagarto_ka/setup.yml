@@ -5,7 +5,7 @@
 
 .setup:
   variables:
-    EA: sargantana
+    EA: lagarto_ka
     FREQ: 50
     FPGA_BOARD: u55c
     GIT_SUBMODULE_STRATEGY: recursive
