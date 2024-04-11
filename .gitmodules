@@ -15,4 +15,4 @@
 	url = ../aurora-dma.git
 [submodule "ip/aurora-raw"]
 	path = ip/aurora-raw
-	url = https://gitlab.bsc.es/hwdesign/fpga/integration-lab/aurora-raw.git
+	url = ../aurora-raw.git
