@@ -3,9 +3,9 @@
 # Licensed under the Solderpad Hardware License v 2.1 (the "License");
 # you may not use this file except in compliance with the License, or, at your option, the Apache License version 2.0.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.solderpad.org/licenses/SHL-2.1
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,15 +14,15 @@
 
 # Author: Daniel J.Mazure, BSC-CNS
 # Date: 22.02.2022
-# Description: 
+# Description:
 
 
 namespace eval _tcl {
-proc get_script_folder {} {
-    set script_path [file normalize [info script]]
-    set script_folder [file dirname $script_path]
-    return $script_folder
-}
+	proc get_script_folder {} {
+		set script_path [file normalize [info script]]
+		set script_folder [file dirname $script_path]
+		return $script_folder
+	}
 }
 variable script_folder
 set script_folder [_tcl::get_script_folder]
@@ -47,7 +47,7 @@ file delete -force $shell_dir
 
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
-    create_project $g_project_name $projec_dir -force -part $g_fpga_part
+	create_project $g_project_name $projec_dir -force -part $g_fpga_part
 }
 
 #MEEP Phase 2 part
@@ -58,7 +58,7 @@ putcolors "**** MEEP Board: $g_board_part ****" $GREEN
 variable design_name
 set design_name $g_project_name
 
-# This needs to be defined before creating the block design 
+# This needs to be defined before creating the block design
 set ip_dir_list [get_property ip_repo_paths [current_project]]
 lappend ip_dir_list $root_dir/ip
 set_property  ip_repo_paths  $ip_dir_list [current_project]
@@ -66,8 +66,21 @@ set_property  ip_repo_paths  $ip_dir_list [current_project]
 # Save the timing constraint file to be edited later for the different selectable IPs (GPIO, Ethernet)
 # Hierarchy is fixed for the MEEP Shell. Each IP adds its own set of constraints to this file
 set TimingConstrFile "$root_dir/xdc/${g_board_part}/${g_project_name}_timing_${g_board_part}.xdc"
-set ILAConstrFile    "$root_dir/xdc/${g_board_part}/${g_project_name}_ila_${g_board_part}.xdc"
 set BoardConstrFile  "$root_dir/xdc/${g_board_part}/${g_project_name}_${g_board_part}.xdc"
+
+#! Include extra xdc from the core if it exist:
+set exist_xdc_ea [file exists $root_dir/accelerator/meep_shell/tcl/ila_${g_board_part}.xdc]
+
+if {$exist_xdc_ea == 0} {
+	putmeeps "No additional XDC from the accelerator"
+	set ILAConstrFile    " $root_dir/xdc/${g_board_part}/${g_project_name}_ila_${g_board_part}.xdc"
+} else {
+	putmeeps "There is an additional XDC from the accelerator"
+	set ILAConstrFile    [list $root_dir/xdc/${g_board_part}/${g_project_name}_ila_${g_board_part}.xdc $root_dir/accelerator/meep_shell/tcl/ila_${g_board_part}.xdc]
+}
+
+set listConstraints [list $TimingConstrFile $ILAConstrFile $BoardConstrFile]
+
 
 # Clean up from previous builds, and generate a new one
 file delete -force $TimingConstrFile
@@ -77,13 +90,13 @@ set InitTime [ clock format [ clock seconds ] -format %H:%M:%S ]
 [Add2ConstrFileList $TimingConstrFile #$InitDate ]
 
 if { $g_useBlockDesign eq "Y" } {
-update_ip_catalog -rebuild
+	update_ip_catalog -rebuild
 	# if { [catch {source ${root_dir}/shell/gen_shell.tcl}] } {
-		# puterrors "Shell generation process failed, terminating ..."
-		# exit 1
+	# puterrors "Shell generation process failed, terminating ..."
+	# exit 1
 	# }
 	source ${root_dir}/shell/gen_shell.tcl
-}	
+}
 
 ####################################################
 # GENERATE TOP FILE
@@ -100,9 +113,18 @@ set top_module "$root_dir/src/${g_top_name}.sv"
 set src_files [glob ${root_dir}/src/*]
 add_files ${src_files}
 # Add Constraint files to project
-add_files -fileset [get_filesets constrs_1] $TimingConstrFile
-add_files -fileset [get_filesets constrs_1] $ILAConstrFile
-add_files -fileset [get_filesets constrs_1] $BoardConstrFile
+foreach i $listConstraints {
+	puts "list: $i"
+	if {[file exists ${i}]} {
+		add_files -fileset [get_filesets constrs_1] $i
+	} else {
+		puts "There is no any constraints for this top module"
+
+	}
+}
+
+
+
 set_property target_language Verilog [current_project]
 source $root_dir/tcl/gen_runs.tcl
 
@@ -139,41 +161,41 @@ set_property  ip_repo_paths  $ip_dir_list [current_project]
 ## Add a list of EA files if the EA has created the ea_flist variable
 
 if { [info exists g_ea_flist] } {
-    putcolors "Adding EA source files ..." $CYAN
-    add_files ${g_ea_flist}
+	putcolors "Adding EA source files ..." $CYAN
+	add_files ${g_ea_flist}
 
 }
 
 # Add a list of xci files from an EA list if it exists
 
 if { [info exists g_ip_list] } {
-    putcolors "Adding the EA IPs ..." $CYAN
+	putcolors "Adding the EA IPs ..." $CYAN
 
-    foreach oneIP $g_ip_list {
-        if { [catch {import_ip $oneIP} ErrorMessage] } {
-                puterrors "IP $oneIP has not been added"
-                puterrors "$ErrorMessage"
-                return 1
-        } else {
-                putcolors "IP $oneIP added" $CYAN
-        }
-    }
+	foreach oneIP $g_ip_list {
+		if { [catch {import_ip $oneIP} ErrorMessage] } {
+			puterrors "IP $oneIP has not been added"
+			puterrors "$ErrorMessage"
+			return 1
+		} else {
+			putcolors "IP $oneIP added" $CYAN
+		}
+	}
 }
 
 # Add block designs from an EA list if it exists
 
 if { [info exists g_bd_list] } {
-    putcolors "Adding the EA BDs ..." $CYAN
+	putcolors "Adding the EA BDs ..." $CYAN
 
-    foreach oneBD $g_bd_list {
-        if { [catch {add_files ${oneBD}} ErrorMessage] } {
-                puterrors "BD $oneBD has not been added"
-                puterrors "$ErrorMessage"
-                return 1
-        } else {                
-                putcolors "BD $oneBD added" $CYAN
-        }
-    }
+	foreach oneBD $g_bd_list {
+		if { [catch {add_files ${oneBD}} ErrorMessage] } {
+			puterrors "BD $oneBD has not been added"
+			puterrors "$ErrorMessage"
+			return 1
+		} else {
+			putcolors "BD $oneBD added" $CYAN
+		}
+	}
 }
 
 
@@ -184,18 +206,18 @@ if { [info exists g_bd_list] } {
 # It can be done under $accelerator_path/meep_shell/tcl/project_options.tcl
 
 if { [info exists g_patch_list] } {
-    putcolors "Applying shell patches ..." $CYAN
+	putcolors "Applying shell patches ..." $CYAN
 
-    foreach patch $g_patch_list {
-        if { [catch {source $patch} ErrorMessage] } {
-                puterrors "Patch $patch has not been loaded"
-                puterrors "$ErrorMessage"
-                return 1
-        } else {
-                putcolors "Patch $patch applied" $CYAN
-        }
-    }
-    save_bd_design
+	foreach patch $g_patch_list {
+		if { [catch {source $patch} ErrorMessage] } {
+			puterrors "Patch $patch has not been loaded"
+			puterrors "$ErrorMessage"
+			return 1
+		} else {
+			putcolors "Patch $patch applied" $CYAN
+		}
+	}
+	save_bd_design
 }
 
 validate_bd_design
