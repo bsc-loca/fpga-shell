@@ -1,0 +1,3 @@
+EMULATED_ACCELERATOR_NAME: lagarto_ka
+EMULATED_ACCELERATOR_REPO: https://gitlab.bsc.es/hwdesign/rtl/core-tile/lagarto_ka-tile.git
+EMULATED_ACCELERATOR_SHA:  dc0857ebbbb7364de0dba7fbd8032f2a25561cdd

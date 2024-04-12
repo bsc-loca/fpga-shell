@@ -6,10 +6,9 @@
 
 ## Publication
 
-Makinote has been published in ACM RAPIDO '2024: Elias Perdomo, Alexander Kropotov, Francelly Katherine Cano Ladino, Syed Zafar, Teresa Cervero, Xavier Martorell Bofill, and Behzad Salami. "Makinote: An FPGA-Based HW/SW Platform for Pre-Silicon Emulation of RISC-V Designs". In Proceedings of the 16th Workshop on Rapid Simulation and Performance Evaluation for Design (RAPIDO '24). Association for Computing Machinery, New York, NY, USA, 29–34. January 2024. https://doi.org/10.1145/3642921.3642928
+Makinote has been published in ACM RAPIDO '2024: Elias Perdomo, Alexander Kropotov, Francelly Katherine Cano Ladino, Syed Zafar, Teresa Cervero, Xavier Martorell Bofill, and Behzad Salami. "Makinote: An FPGA-Based HW/SW Platform for Pre-Silicon Emulation of RISC-V Designs". This paper is presented in the proceedings of the 16th Workshop on Rapid Simulation and Performance Evaluation for Design (RAPIDO '24), held by the Association for Computing Machinery (ACM) in New York, NY, USA, during January 29th to 34th, 2024. https://doi.org/10.1145/3642921.3642928
 
 If you use our Makinote HW or SW tools anyhow in your research please reference our AMC paper mentioned above and send us a citation of your work.
-
 
 ## Table of Contents
 
@@ -18,7 +17,6 @@ If you use our Makinote HW or SW tools anyhow in your research please reference 
 ## 1- :art: Features
 
 The shell is meant to be a static perimeter architecture that guarantees that the inside accelerator package can be interchangeable for any other package when meeting a defined I/O interface between the shell and the accelerator package.
-
 
 ### 1.1- 📡 Interfaces
 
@@ -41,7 +39,7 @@ The supported boards are as follows:
 
 ## 2- :electric_plug: Prerequisites
 
-- The FPGA Shell is compatible with both Vivado 2021.2. and 2021.1 versions
+- The FPGA Shell is compatible with Vivado (2021.2, 2021.1, and 2023.2) versions
 - It only works on Linux. There is no plan to add Windows support in the middle term.
 
 ## 3- 🛠️ Usage
@@ -69,6 +67,7 @@ Most of these accelerators are been used in BSC and some of them are not open so
 | **sargantana** |                                                                                                                                                                                                                                                               DRAC Lagarto Processor                                                                                                                                                                                                                                                                |                                                              - |
 | **ea_ait**     |                                                                                                                                                                                                                     Interfaces the Shell with AIT which is a tool to generate accelerators from C or C++ code usin OmpSs@FPGA.                                                                                                                                                                                                                      |                           Finishing the AIT + Shell Interfaces |
 | **ea_sandbox** |                                                                                                                                                                                                 Interfaces the Shell with the Sandbox tool which generates configurable designs to explore HBM and DDR performance based on throughput and Latency.                                                                                                                                                                                                 | Sandbox tool completed and doing the interface with the Shell. |
+| **Lagarto Ox** |                                                                                                                                                                                                                                                    A 64-bit 4-way Out-of-Order RISC-V processor.                                                                                                                                                                                                                                                    |                                                       Updated. |
 
 Every EA has a folder fpga_shell/support with a ea_url.txt file. This file contains the Git URL and the commit SHA. If it is necessary to change the commit SHA to point a specific commit this is the place to modify it.
 
@@ -242,7 +241,6 @@ flowchart LR
 
 ### 6.1- :wrench: Production.
 
-
 The production environment will be a monthly release. We will work with:
 
 :books: The FPGA card used here are the **u280** and **u55c** (default).
@@ -317,11 +315,9 @@ read all
 
 This will automatically kill the process.
 
-
 ## 8- :woman: Authors
 
 fpga@bsc.es
-
 
 ## 9- :globe_with_meridians: Wiki
 
@@ -349,6 +345,3 @@ Answer
 
 > You need to get the license here:
 > https://www.xilinx.com/products/intellectual-property/cmac_usplus.html#overview
-
-
-

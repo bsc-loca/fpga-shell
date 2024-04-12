@@ -5,8 +5,8 @@
 
 .setup:
   variables:
-    EA: sargantana
-    FREQ: 50
+    EA: ox
+    FREQ: 25
     FPGA_BOARD: u55c
     GIT_SUBMODULE_STRATEGY: recursive
     NUMBER_OF_JOBS: "8"
