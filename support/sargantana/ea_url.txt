@@ -1,5 +1,5 @@
 EMULATED_ACCELERATOR_NAME: sargantana
-EMULATED_ACCELERATOR_REPO: https://gitlab.bsc.es/hwdesign/rtl/core-tile/sargantana_tile.git
-EMULATED_ACCELERATOR_SHA: c26b9de9f1f3608959d9ba0c1b90901f874858a2
+EMULATED_ACCELERATOR_REPO: https://github.com/bsc-loca/core_tile
+EMULATED_ACCELERATOR_SHA: fee51b414cef0b06d932b859ac6fd9cb5daa9217
 
 
