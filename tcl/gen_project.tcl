@@ -113,15 +113,24 @@ set top_module "$root_dir/src/${g_top_name}.sv"
 set src_files [glob ${root_dir}/src/*]
 add_files ${src_files}
 # Add Constraint files to project
-foreach i $listConstraints {
-	puts "list: $i"
-	if {[file exists ${i}]} {
-		add_files -fileset [get_filesets constrs_1] $i
+# Add Constraint files to project
+foreach constraintList $listConstraints {
+	if {[llength $constraintList] > 0} {
+		foreach i $constraintList {
+			puts "Checking file: $i"
+			if {[file exists $i]} {
+				puts "File $i exists"
+				add_files -fileset [get_filesets constrs_1] $i
+			} else {
+				puts "File $i does not exist"
+				puts "There are no constraints for this top module"
+			}
+		}
 	} else {
-		puts "There is no any constraints for this top module"
-
+		puts "No constraints specified in this list"
 	}
 }
+
 
 
 
