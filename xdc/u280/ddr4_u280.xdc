@@ -1,8 +1,22 @@
+#  DDR4_RESET_GATE Active High Output from Ultrascale+ Device to hold all External DDR4 interfaces in Self refresh.
+#                  This Output disconnects the Memory interface reset and holds it in active and pulls the Clock Enables signal on the Memory Interfaces.
+#                  Refer to XAPP1321 for details on Self refresh mode.
+#
+#set_property PACKAGE_PIN H33              [get_ports "DDR4_RESET_GATE"]                    ;# Bank  75 VCCO - VCC1V8   - IO_L7P_T1L_N0_QBC_AD13P_75
+#set_property IOSTANDARD  LVCMOS18         [get_ports "DDR4_RESET_GATE"]                    ;# Bank  75 VCCO - VCC1V8   - IO_L7P_T1L_N0_QBC_AD13P_75
 # DDR4 RDIMM Controller 0, 72-bit Data Interface, x4 Componets, Single Rank
 ##     <<<NOTE>>> DQS Clock strobes have been swapped from JEDEC standard to match Xilinx MIG Clock order:
 ##                JEDEC Order   DQS ->  0  9  1 10  2 11  3 12  4 13  5 14  6 15  7 16  8 17
 ##                Xil MIG Order DQS ->  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
 ##
+
+#set ddr_clk [get_clocks -of_objects [get_pins meep_shell_inst/ddr4_0/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0]]
+#set wiz_clk [get_clocks -of_objects [get_pins meep_shell_inst/clk_wiz_1/inst/mmcme4_adv_inst/CLKOUT0]]
+#set_max_delay -from $ddr_clk -to $wiz_clk 5.0
+#set_max_delay -from $wiz_clk -to $ddr_clk 20.0
+
+create_clock -period 20.000  [get_ports mc_clk ]
+
 set_property PACKAGE_PIN BE51               [ get_ports  {c0_ddr4_dq[42]} ]        ;# Bank  66 VCCO - VCC1V2 Net "DDR4_C0_DQ42"    - IO_L24N_T3U_N11_66
 set_property IOSTANDARD  POD12_DCI          [ get_ports  {c0_ddr4_dq[42]} ]        ;# Bank  66 VCCO - VCC1V2 Net "DDR4_C0_DQ42"    - IO_L24N_T3U_N11_66
 set_property PACKAGE_PIN BD51               [ get_ports  {c0_ddr4_dq[43]} ]        ;# Bank  66 VCCO - VCC1V2 Net "DDR4_C0_DQ43"    - IO_L24P_T3U_N10_66
@@ -131,8 +145,8 @@ set_property PACKAGE_PIN BF42              [ get_ports  {c0_ddr4_adr[3]} ]      
 set_property IOSTANDARD  SSTL12_DCI        [ get_ports  {c0_ddr4_adr[3]} ]         ;# Bank  65 VCCO - VCC1V2 Net "DDR4_C0_ADR3"    - IO_L21P_T3L_N4_AD8P_D06_65
 set_property PACKAGE_PIN BF46              [ get_ports  {c0_ddr4_adr[0]} ]         ;# Bank  65 VCCO - VCC1V2 Net "DDR4_C0_ADR0"    - IO_L20N_T3L_N3_AD1N_D09_65
 set_property IOSTANDARD  SSTL12_DCI        [ get_ports  {c0_ddr4_adr[0]} ]         ;# Bank  65 VCCO - VCC1V2 Net "DDR4_C0_ADR0"    - IO_L20N_T3L_N3_AD1N_D09_65
-set_property PACKAGE_PIN BF45              [ get_ports  {c0_ddr4_parity} ]         ;# Bank  65 VCCO - VCC1V2 Net "DDR4_C0_PAR"     - IO_L20P_T3L_N2_AD1P_D08_65
-set_property IOSTANDARD  SSTL12_DCI        [ get_ports  {c0_ddr4_parity} ]         ;# Bank  65 VCCO - VCC1V2 Net "DDR4_C0_PAR"     - IO_L20P_T3L_N2_AD1P_D08_65
+set_property PACKAGE_PIN BF45              [ get_ports  {c0_ddr4_par} ]         ;# Bank  65 VCCO - VCC1V2 Net "DDR4_C0_PAR"     - IO_L20P_T3L_N2_AD1P_D08_65
+set_property IOSTANDARD  SSTL12_DCI        [ get_ports  {c0_ddr4_par} ]         ;# Bank  65 VCCO - VCC1V2 Net "DDR4_C0_PAR"     - IO_L20P_T3L_N2_AD1P_D08_65
 set_property PACKAGE_PIN BE41              [ get_ports  {c0_ddr4_bg[1]} ]          ;# Bank  65 VCCO - VCC1V2 Net "DDR4_C0_BG1"     - IO_L19N_T3L_N1_DBC_AD9N_D11_65
 set_property IOSTANDARD  SSTL12_DCI        [ get_ports  {c0_ddr4_bg[1]} ]          ;# Bank  65 VCCO - VCC1V2 Net "DDR4_C0_BG1"     - IO_L19N_T3L_N1_DBC_AD9N_D11_65
 set_property PACKAGE_PIN BD41              [ get_ports  {c0_ddr4_adr[11]} ]        ;# Bank  65 VCCO - VCC1V2 Net "DDR4_C0_ADR11"   - IO_L19P_T3L_N0_DBC_AD9P_D10_65
@@ -321,3 +335,5 @@ set_property IOSTANDARD DIFF_POD12_DCI     [ get_ports  {c0_ddr4_dqs_c[1]} ]    
 set_property PACKAGE_PIN BM28              [ get_ports  {c0_ddr4_dqs_t[1]} ]       ;# Bank  64 VCCO - VCC1V2 Net "DDR4_C0_DQS_T9"  - IO_L1P_T0L_N0_DBC_64
 set_property IOSTANDARD DIFF_POD12_DCI     [ get_ports  {c0_ddr4_dqs_t[1]} ]       ;# Bank  64 VCCO - VCC1V2 Net "DDR4_C0_DQS_T9"  - IO_L1P_T0L_N0_DBC_64
 ##
+
+
