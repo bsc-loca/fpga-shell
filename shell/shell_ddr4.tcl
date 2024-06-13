@@ -199,25 +199,3 @@ set_property CONFIG.C_DATA_DEPTH {4096} [get_bd_cells ila_0]
 
 connect_bd_net [get_bd_pins ila_0/clk] [get_bd_pins ddr4_0/c0_ddr4_ui_clk]
 connect_bd_intf_net [get_bd_intf_pins ila_0/SLOT_0_AXI] [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI]
-
-
-#ILA Resets
-create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_1
-
-set_property -dict [list \
-  CONFIG.C_DATA_DEPTH {4096} \
-  CONFIG.C_MONITOR_TYPE {Native} \
-  CONFIG.C_NUM_OF_PROBES {9} \
-] [get_bd_cells ila_1]
-
-connect_bd_net [get_bd_pins ila_1/clk] [get_bd_ports sysclk0_clk_p]
-
-connect_bd_net [get_bd_ports ExtArstn] [get_bd_pins ila_1/probe0]
-connect_bd_net [get_bd_ports resetn] [get_bd_pins ila_1/probe1]
-connect_bd_net [get_bd_pins rst_ea_CLK0/peripheral_aresetn] [get_bd_pins ila_1/probe2]
-connect_bd_net [get_bd_pins ddrSYSRst/Res] [get_bd_pins ila_1/probe3]
-connect_bd_net [get_bd_pins ddr4_0/c0_init_calib_complete] [get_bd_pins ila_1/probe4]
-connect_bd_net [get_bd_pins ddr4_0/c0_ddr4_ui_clk_sync_rst] [get_bd_pins ila_1/probe5]
-connect_bd_net [get_bd_pins proc_sys_rst_pcie/peripheral_aresetn] [get_bd_pins ila_1/probe6]
-connect_bd_net [get_bd_pins proc_sys_rst_pcie/interconnect_aresetn] [get_bd_pins ila_1/probe7]
-connect_bd_net [get_bd_pins mem_calib_sync/peripheral_aresetn] [get_bd_pins ila_1/probe8]
