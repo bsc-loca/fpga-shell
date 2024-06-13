@@ -71,9 +71,14 @@ foreach dicEntry $ShellEnabledIntf {
 	
 	if {[regexp -inline -all "HBM" $IntfName] ne "" } {
 		set HBMentry $dicEntry
-		source $g_root_dir/shell/shell_hbm.tcl		
+		source $g_root_dir/shell/shell_hbm.tcl	
+		
+		source $g_root_dir/shell/shell_cms.tcl	
 	}
-
+	#Placeholder for CMS
+	
+	#Placeholder for CMS
+	
 	if {[regexp -inline -all "UART" $IntfName] ne "" } {
 		set UARTentry $dicEntry
 		source $g_root_dir/shell/shell_uart.tcl

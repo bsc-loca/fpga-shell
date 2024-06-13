@@ -202,11 +202,11 @@ if { [info exists hbm_inst] == 0 } {
 	connect_bd_net [get_bd_ports hbm_cattrip] [get_bd_pins hbm_cattrip_or/Res]
 	
 	if { $HBMReady != ""} {
-            create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 APB_rst_or
-	    set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {and} CONFIG.LOGO_FILE {data/sym_andgate.png}] [get_bd_cells APB_rst_or]
-	    connect_bd_net [get_bd_pins hbm_0/apb_complete_0] [get_bd_pins APB_rst_or/Op1]
-	    connect_bd_net [get_bd_pins hbm_0/apb_complete_1] [get_bd_pins APB_rst_or/Op2]
-            make_bd_pins_external  [get_bd_pins APB_rst_or/Res]
+            create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 APB_rst_and
+	    set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {and} CONFIG.LOGO_FILE {data/sym_andgate.png}] [get_bd_cells APB_rst_and]
+	    connect_bd_net [get_bd_pins hbm_0/apb_complete_0] [get_bd_pins APB_rst_and/Op1]
+	    connect_bd_net [get_bd_pins hbm_0/apb_complete_1] [get_bd_pins APB_rst_and/Op2]
+            make_bd_pins_external  [get_bd_pins APB_rst_and/Res]
             set_property name $HBMReady [get_bd_ports Res_0]
 	}
 
