@@ -36,7 +36,8 @@ set DDR4userWidth [dict get $DDR4entry AxiUserWidth]
 
 set DDR4userWidth 0
 set DDR4addrWidth 34
-set DDR4dataWidth 512
+#set DDR4dataWidth 512
+set DDR4dataWidth 256
 set DDR4idWidth 6
 set DDR4ClkNm "mc_clk"
 set DDR4Freq 100000000
@@ -92,8 +93,8 @@ set ddr_dev ddr4_${DDR4ChNum}
 set ddr4_inst [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4:2.2 $ddr_dev ]
 set_property -dict [ list \
    CONFIG.C0.DDR4_AUTO_AP_COL_A3 {true} \
-   CONFIG.C0.DDR4_AxiAddressWidth {34} \
-   CONFIG.C0.DDR4_AxiDataWidth {512} \
+   CONFIG.C0.DDR4_AxiAddressWidth $DDR4addrWidth \
+   CONFIG.C0.DDR4_AxiDataWidth $DDR4dataWidth \
    CONFIG.C0.DDR4_CLKFBOUT_MULT {15} \
    CONFIG.C0.DDR4_CLKOUT0_DIVIDE {5} \
    CONFIG.C0.DDR4_CasLatency {17} \
@@ -153,7 +154,15 @@ connect_bd_intf_net -boundary_type upper [get_bd_intf_pins axi_xbar_pcie/M01_AXI
 #MEM_AXI
 connect_bd_intf_net [get_bd_intf_ports $DDR4intf] -boundary_type upper [get_bd_intf_pins axi_xbar_pcie/S01_AXI]
 #Lets associate a clock to the frequency of the mem_axi bus
-set_property CONFIG.ASSOCIATED_BUSIF ${DDR4intf} [get_bd_ports /$DDR4ClkNm]
+set_property CONFIG.ASSOCIATED_BUSIF ${DDR4intf} [get_bd_ports /chipset_clk]
+
+#Workaround; TEST camouflage the mc_clk as the ui_clk from DDR controller
+disconnect_bd_net /clk_wiz_1_clk_out1 [get_bd_ports /$DDR4ClkNm]
+connect_bd_net [get_bd_ports /$DDR4ClkNm] [get_bd_pins ddr4_0/c0_ddr4_ui_clk]
+#AND reset signal
+disconnect_bd_net /rst_ea_CLK0_peripheral_aresetn [get_bd_ports mc_rstn]
+connect_bd_net [get_bd_ports mc_rstn] [get_bd_pins mem_calib_sync/peripheral_aresetn]
+
 
 #SYS_RST due to 'resetn' being active low and SYS_RST being active high we will need an inverter (NOT gate)
 create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 ddrSYSRst
@@ -193,9 +202,9 @@ assign_bd_address -offset 0x00000000 -range 0x000200000000 -target_address_space
 
 #ILA DEBUGGING:
 #ILA MEM_AXI
-create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_0
+#create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_0
 
-set_property CONFIG.C_DATA_DEPTH {4096} [get_bd_cells ila_0]
+#set_property CONFIG.C_DATA_DEPTH {4096} [get_bd_cells ila_0]
 
-connect_bd_net [get_bd_pins ila_0/clk] [get_bd_pins ddr4_0/c0_ddr4_ui_clk]
-connect_bd_intf_net [get_bd_intf_pins ila_0/SLOT_0_AXI] [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI]
+#connect_bd_net [get_bd_pins ila_0/clk] [get_bd_pins ddr4_0/c0_ddr4_ui_clk]
+#connect_bd_intf_net [get_bd_intf_pins ila_0/SLOT_0_AXI] [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI]
