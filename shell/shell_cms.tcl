@@ -21,6 +21,8 @@ putmeeps "Creating CMS..."
 #Create the CMS, no properties needed
 create_bd_cell -type ip -vlnv xilinx.com:ip:cms_subsystem:4.0 cms_subsystem_0
 
+set PortList [lappend PortList $g_cms_file]
+
 save_bd_design
 
 #Connect temp sensors data 1 and 2

@@ -29,6 +29,7 @@ set g_Eth0_file     $g_root_dir/interfaces/ethernet0.sv
 set g_Eth1_file     $g_root_dir/interfaces/ethernet1.sv
 set g_Eth100Gb_file $g_root_dir/interfaces/eth100gb.sv
 set g_uart_file     $g_root_dir/interfaces/uart.sv
+set g_cms_file		$g_root_dir/interfaces/cms.sv
 
 # Create a list with the physical ports file handler
 # When an interface is detected, the file path is added to the list
