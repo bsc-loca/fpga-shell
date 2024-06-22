@@ -57,20 +57,12 @@ connect_bd_net [get_bd_pins /cms_subsystem_0/satellite_uart_txd] [get_bd_ports s
 create_bd_port -dir I satellite_uart_rxd
 connect_bd_net [get_bd_pins /cms_subsystem_0/satellite_uart_rxd] [get_bd_ports satellite_uart_rxd]
 
-#Connect with AXI pcie lite interconnect
-#First modify interconnect to make space to fit another master
-set_property -dict [list \
-  CONFIG.NUM_MI {2} \
-  CONFIG.M00_HAS_REGSLICE {4} \
-  CONFIG.M01_HAS_REGSLICE {4} \
-] [get_bd_cells axi_xbar_pcie_lite]
-
-#Connect M01 aclk and areset signals
-connect_bd_net [get_bd_pins axi_xbar_pcie_lite/M01_ACLK] [get_bd_pins clk_wiz_1/clk_out1]
-connect_bd_net [get_bd_pins axi_xbar_pcie_lite/M01_ARESETN] [get_bd_pins rst_ea_CLK0/peripheral_aresetn]
-
-#Connect M01 to s_axi_ctrl from CMS
-connect_bd_intf_net -boundary_type upper [get_bd_intf_pins axi_xbar_pcie_lite/M01_AXI] [get_bd_intf_pins cms_subsystem_0/s_axi_ctrl]
+delete_bd_objs [get_bd_intf_nets axi_xbar_pcie_M00_AXI] [get_bd_cells SHELL_ROM]
+connect_bd_intf_net -boundary_type upper [get_bd_intf_pins axi_xbar_pcie/M00_AXI] [get_bd_intf_pins cms_subsystem_0/s_axi_ctrl]
+disconnect_bd_net /proc_sys_rst_pcie_peripheral_aresetn [get_bd_pins axi_xbar_pcie/M00_ARESETN]
+disconnect_bd_net /qdma_0_axi_aclk [get_bd_pins axi_xbar_pcie/M00_ACLK]
+connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ACLK] [get_bd_pins clk_wiz_1/clk_out1]
+connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ARESETN] [get_bd_pins rst_ea_CLK0/peripheral_aresetn]
 
 #What do we do with 'interrupt_host'?
 
