@@ -35,13 +35,18 @@ set DDR4userWidth [dict get $DDR4entry AxiUserWidth]
 #Static redefinition of widths
 
 set DDR4userWidth 0
+#DDR at least on u280 has 16GB so 34 bits
 set DDR4addrWidth 34
-#set DDR4dataWidth 512
-set DDR4dataWidth 256
+set DDR4dataWidth 512
 set DDR4idWidth 6
+#Axi clock source (should be always mc_clk, aka memory controller clock)
 set DDR4ClkNm "mc_clk"
+set AXI_freq [get_property CONFIG.FREQ_HZ [get_bd_ports /mc_clk]]
+#frequency from SYS_CLOCK to DDR controller, not AXI clock
 set DDR4Freq 100000000
+#Defines memory calibration signal name
 set DDR4Ready "mem_calib_complete"
+#Defines name for AXI interface, should always be 'mem_axi'
 set DDR4intf "mem_axi"
 putwarnings "Static redefinition of widths: addrw: $DDR4addrWidth; userw: $DDR4userWidth; dataw: $DDR4dataWidth; idw: $DDR4idWidth; Freq: $DDR4Freq from CLK: $DDR4ClkNm"
 
@@ -63,7 +68,7 @@ putmeeps "Creating input DDR4 interface..."
    CONFIG.WUSER_WIDTH $DDR4userWidth \
    CONFIG.RUSER_WIDTH $DDR4userWidth \
    CONFIG.ID_WIDTH $DDR4idWidth \
-   CONFIG.FREQ_HZ 50000000 \
+   CONFIG.FREQ_HZ $AXI_freq \
    CONFIG.HAS_BRESP {1} \
    CONFIG.HAS_BURST {1} \
    CONFIG.HAS_CACHE {0} \
@@ -154,11 +159,8 @@ connect_bd_intf_net -boundary_type upper [get_bd_intf_pins axi_xbar_pcie/M01_AXI
 #MEM_AXI
 connect_bd_intf_net [get_bd_intf_ports $DDR4intf] -boundary_type upper [get_bd_intf_pins axi_xbar_pcie/S01_AXI]
 #Lets associate a clock to the frequency of the mem_axi bus
-set_property CONFIG.ASSOCIATED_BUSIF ${DDR4intf} [get_bd_ports /chipset_clk]
+set_property CONFIG.ASSOCIATED_BUSIF ${DDR4intf} [get_bd_ports /$DDR4ClkNm]
 
-#Workaround; TEST camouflage the mc_clk as the ui_clk from DDR controller
-disconnect_bd_net /clk_wiz_1_clk_out1 [get_bd_ports /$DDR4ClkNm]
-connect_bd_net [get_bd_ports /$DDR4ClkNm] [get_bd_pins ddr4_0/c0_ddr4_ui_clk]
 #AND reset signal
 disconnect_bd_net /rst_ea_CLK0_peripheral_aresetn [get_bd_ports mc_rstn]
 connect_bd_net [get_bd_ports mc_rstn] [get_bd_pins mem_calib_sync/peripheral_aresetn]
@@ -199,12 +201,3 @@ connect_bd_net [get_bd_pins gndx32/dout] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctr
 #Set address space
 assign_bd_address -offset 0x00000000 -range 0x000200000000 -target_address_space [get_bd_addr_spaces qdma_0/M_AXI] [get_bd_addr_segs ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] -force
 assign_bd_address -offset 0x00000000 -range 0x000200000000 -target_address_space [get_bd_addr_spaces mem_axi]        [get_bd_addr_segs ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] -force
-
-#ILA DEBUGGING:
-#ILA MEM_AXI
-#create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_0
-
-#set_property CONFIG.C_DATA_DEPTH {4096} [get_bd_cells ila_0]
-
-#connect_bd_net [get_bd_pins ila_0/clk] [get_bd_pins ddr4_0/c0_ddr4_ui_clk]
-#connect_bd_intf_net [get_bd_intf_pins ila_0/SLOT_0_AXI] [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI]

@@ -10,12 +10,11 @@
 ##                Xil MIG Order DQS ->  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
 ##
 
-#set ddr_clk [get_clocks -of_objects [get_pins meep_shell_inst/ddr4_0/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0]]
-#set wiz_clk [get_clocks -of_objects [get_pins meep_shell_inst/clk_wiz_1/inst/mmcme4_adv_inst/CLKOUT0]]
-#set_max_delay -from $ddr_clk -to $wiz_clk 5.0
-#set_max_delay -from $wiz_clk -to $ddr_clk 20.0
-
-create_clock -period 20.000  [get_ports mc_clk ]
+set ddr_clk [get_clocks -of_objects [get_pins meep_shell_inst/ddr4_0/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0]]
+set wiz_clk [get_clocks -of_objects [get_pins meep_shell_inst/clk_wiz_1/inst/mmcme4_adv_inst/CLKOUT0]]
+#set_max_delay -from $ddr_clk -to $wiz_clk [get_property period [get_clocks -of_objects [get_pins meep_shell_inst/ddr4_0/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0]]]
+#set_max_delay -from $wiz_clk -to $ddr_clk [get_property period [get_clocks -of_objects [get_pins meep_shell_inst/clk_wiz_1/inst/mmcme4_adv_inst/CLKOUT0]]]
+set_max_delay -from $ddr_clk -to $wiz_clk [get_property period [get_clocks -of_objects [get_pins meep_shell_inst/ddr4_0/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT0]]]
 
 set_property PACKAGE_PIN BE51               [ get_ports  {c0_ddr4_dq[42]} ]        ;# Bank  66 VCCO - VCC1V2 Net "DDR4_C0_DQ42"    - IO_L24N_T3U_N11_66
 set_property IOSTANDARD  POD12_DCI          [ get_ports  {c0_ddr4_dq[42]} ]        ;# Bank  66 VCCO - VCC1V2 Net "DDR4_C0_DQ42"    - IO_L24N_T3U_N11_66

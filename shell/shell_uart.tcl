@@ -34,7 +34,6 @@ set g_UARTClkPort [dict get $UARTentry SyncClk Label]
 # if { $UARTaddrWidth == "0" } {
 #     set UARTaddrWidth "13"	
 # }
-
 #putdebugs "UART? $g_UART_CLK"
 
 # UART IPs are definded in tcl/vivado_ip_tables.tcl
@@ -95,7 +94,10 @@ if { $g_UART_MODE eq "simple"} {
 		make_bd_pins_external  [get_bd_pins $UartCoreName/ip2intc_irpt]
 		set_property name $g_UART_irq [get_bd_ports ip2intc_irpt_0]
 	}	
-
+    #EDIT: Joan Teruel (joan.teruel@bsc.es)
+	#The UART should not be associated to the mc_clk (memory controller clock)
+	#Change to chipset_clk by Default
+	set $g_UART_CLK "chipset_clk"
 	set_property CONFIG.ASSOCIATED_BUSIF [get_property CONFIG.ASSOCIATED_BUSIF [get_bd_ports /$g_UART_CLK]]$g_UART_ifname: [get_bd_ports /$g_UART_CLK]
 	
 	### UART memory map	
