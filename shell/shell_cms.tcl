@@ -18,6 +18,9 @@
 
 putwarnings "CMS enabled, needed HBM memory"
 
+#Append cms.sv interfaces file
+set PortList [lappend PortList $g_cms_file]
+
 #Create the CMS, no properties needed
 create_bd_cell -type ip -vlnv xilinx.com:ip:cms_subsystem:4.0 cms_subsystem
 
@@ -46,6 +49,7 @@ set_property name satellite_gpio [get_bd_ports satellite_gpio_0]
 
 #Make external UART connection
 make_bd_intf_pins_external [get_bd_intf_pins cms_subsystem/satellite_uart]
+set_property name satellite_uart [get_bd_intf_ports satellite_uart_0]
 
 #Connect with AXI pcie lite interconnect
 #First modify interconnect to make space to fit another master
