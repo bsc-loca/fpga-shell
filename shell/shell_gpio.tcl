@@ -62,14 +62,11 @@ connect_bd_net [get_bd_pins axi_gpio_0/s_axi_aresetn] $pcie_rst_pin
 #connect_bd_net [get_bd_pins axi_gpio_0/s_axi_aclk] $APBClockPin
 #connect_bd_net [get_bd_pins axi_gpio_0/s_axi_aresetn] $APBRstPin
 
-
 ## Add timing constraints to the timing constrains file
 ## For the GPIO, we assume all outputs are used as asynchronous to the PCIe clock domain.
-set gpio_out_pin    "meep_shell_inst/axi_gpio_0/U0/gpio_core_1/Not_Dual.gpio_Data_Out_reg*/C"
-set gpio_out_constr "set_false_path -from \[get_pins $gpio_out_pin\] "
-
-set ConstrList [list $gpio_out_constr  ]
-
-[Add2ConstrFileList $TimingConstrFile $ConstrList]
+# set gpio_out_pin    "meep_shell_inst/axi_gpio_0/U0/gpio_core_1/Not_Dual.gpio_Data_Out_reg*/C"
+# set gpio_out_constr "set_false_path -from \[get_pins $gpio_out_pin\] "
+# set ConstrList [list $gpio_out_constr  ]
+# [Add2ConstrFileList $TimingConstrFile $ConstrList]
 
 save_bd_design
