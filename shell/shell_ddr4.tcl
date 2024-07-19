@@ -143,6 +143,8 @@ connect_bd_net [get_bd_pins $ddr_dev/c0_ddr4_aresetn] [get_bd_pins mem_calib_syn
 set_property -dict [list \
   CONFIG.NUM_MI {2} \
   CONFIG.NUM_SI {2} \
+  CONFIG.M00_HAS_REGSLICE {4} \
+  CONFIG.M01_HAS_REGSLICE {4} \
 ] [get_bd_cells axi_xbar_pcie]
 
 #ADD additional signals S01_ACLK, S01_ARESETN, M01_ACLK, M01_ARESETN
