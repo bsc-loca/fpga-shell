@@ -51,6 +51,8 @@ add_files -fileset [get_filesets constrs_1] "$g_root_dir/xdc/$g_board_part/hbm_$
 
 ##if {[info exists $shellIntf]} 
 
+set CMS_disabled 1
+
 foreach dicEntry $ShellEnabledIntf {
 
 	set IntfName [dict get $dicEntry Name]
@@ -67,12 +69,13 @@ foreach dicEntry $ShellEnabledIntf {
 		source $g_root_dir/shell/shell_ddr4.tcl
 		add_files -fileset [get_filesets constrs_1] "$g_root_dir/xdc/$g_board_part/ddr4_${g_board_part}.xdc"
         set_property CONFIG.ASSOCIATED_BUSIF [get_property CONFIG.ASSOCIATED_BUSIF [get_bd_ports /$DDR4ClkNm]]$DDR4intf: [get_bd_ports /$DDR4ClkNm]
-
+		set MemController "DDR"
 	} 
 	
 	if {[regexp -inline -all "HBM" $IntfName] ne "" } {
 		set HBMentry $dicEntry
 		source $g_root_dir/shell/shell_hbm.tcl	
+		set MemController "HBM"
 	}
 	
 	if {[regexp -inline -all "UART" $IntfName] ne "" } {
@@ -117,17 +120,16 @@ foreach dicEntry $ShellEnabledIntf {
 		source $g_root_dir/shell/shell_slvaxi.tcl	
 		set_property CONFIG.ASSOCIATED_BUSIF [get_property CONFIG.ASSOCIATED_BUSIF [get_bd_ports /$g_SLVAXI_CLK]]$g_SLVAXI_ifname: [get_bd_ports /$g_SLVAXI_CLK]
 	}
+	if {[regexp -inline -all "CMS" $IntfName] ne "" } {
+		source $g_root_dir/shell/shell_cms.tcl	
+		add_files -fileset [get_filesets constrs_1] "$g_root_dir/xdc/$g_board_part/cms_${g_board_part}.xdc"
+		set CMS_disabled 0
+	}
 }
 
 #GEnerate IF GPIO: Inside the tcl
 
 source $g_root_dir/shell/shell_gpio.tcl
-
-#Placeholder for CMS
-#Added module by Joan Teruel Jurado
-source $g_root_dir/shell/shell_cms.tcl	
-add_files -fileset [get_filesets constrs_1] "$g_root_dir/xdc/$g_board_part/cms_${g_board_part}.xdc"
-#Placeholder for CMS
 
 if { [info exists hbm_inst] && [info exists AuroradmaMem] && $AuroradmaMem eq "hbm"} {
   set AurHBMSwitch [expr $AuroraHBMCh/16]
