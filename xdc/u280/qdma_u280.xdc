@@ -101,8 +101,8 @@ set_max_delay -datapath_only -from $sys1_clk -to $qdma_clk [expr [get_property -
 #----------------- PCIe JTAG CDC -------------------
 # Timing constraints for clock domains crossings (CDC) for at least 1st system synthesized clock
 # JTAG clock got from QDMA AXI clock inside debug_bridge isn't of clock type by default and is 8 times slower
-create_clock -period [expr [get_property -min period $qdma_clk] * 8] -name PCIE_JTCK [get_pins -hierarchical pci2jtg_bridge/tap_tck]
-set pci_jtck [get_clocks -of_objects [get_pins -hierarchical pci2jtg_bridge/tap_tck]]
+create_clock -period [expr [get_property -min period $qdma_clk] * 8] -name PCIE_JTCK [get_pins -hierarchical jtag_tck_buf/BUFG_O]
+set pci_jtck [get_clocks -of_objects [get_pins -hierarchical jtag_tck_buf/BUFG_O]]
 # set_false_path -from $xxx_clk -to $yyy_clk
 # controlling resync paths to be less than source clock period
 # (-datapath_only to exclude clock paths)
