@@ -11,21 +11,21 @@ set_property BITSTREAM.CONFIG.SPI_FALL_EDGE YES [current_design]
 set_property BITSTREAM.CONFIG.UNUSEDPIN Pullup [current_design]           
 set_property BITSTREAM.CONFIG.SPI_32BIT_ADDR Yes [current_design]         
 # ------------------------------------------------------------------------
-set_property PACKAGE_PIN BL10             [get_ports  {sysclk0_clk_n} ]            
-set_property PACKAGE_PIN BK10             [get_ports  {sysclk0_clk_p} ]            
 
-set_property PACKAGE_PIN BK44             [get_ports  {sysclk1_clk_n} ]     
-set_property PACKAGE_PIN BK43             [get_ports  {sysclk1_clk_p} ]     
+set_property PACKAGE_PIN BK44               [get_ports  {sysclk0_clk_n} ]            
+set_property PACKAGE_PIN BK43               [get_ports  {sysclk0_clk_p} ]            
+
+set_property PACKAGE_PIN BL10               [get_ports  {sysclk1_clk_n} ]     
+set_property PACKAGE_PIN BK10               [get_ports  {sysclk1_clk_p} ]     
 
 #set_property PACKAGE_PIN F23              [get_ports  {sysclk2_clk_n} ] 
 #set_property PACKAGE_PIN F24              [get_ports  {sysclk2_clk_p} ] 
 
 
-set_property IOSTANDARD  LVDS              [ get_ports  {sysclk*} ]     
+set_property IOSTANDARD  LVDS               [get_ports  {sysclk*} ]     
 
 set_property PACKAGE_PIN BG45              [get_ports resetn] ;# Bank  65 VCCO - VCC1V8   - IO_L18N_T2U_N11_AD2N_D13_65
 set_property IOSTANDARD  LVCMOS18          [get_ports resetn] ;# Bank  65 VCCO - VCC1V8   - IO_L18N_T2U_N11_AD2N_D13_65
-
 
 #Clocks 0, 1 and 2 are 2,3, and 4 in the u55c master file:
 #set_property PACKAGE_PIN F23     [get_ports "SYSCLK4_N"] ;# Bank  72 VCCO - VCC1V8   - IO_L11N_T1U_N9_GC_72_F23
@@ -38,15 +38,7 @@ set_property IOSTANDARD  LVCMOS18          [get_ports resetn] ;# Bank  65 VCCO -
 #IMPORTANT: sysclk0 is sysclk2 in the u55c master xdc file. sysclk1 is sysclk3
 #For u280 compatibility reasons
 
-create_clock -period 10.000 -name SYSCLK_2      [get_ports sysclk0_clk_p]
-#create_clock -period 10.000 -name SYSCLK_3      [get_ports sysclk1_clk_p] 
-#create_clock -period 10.000 -name sysclk4      [get_ports sysclk2_clk_p]
+create_clock -period 10.000 -name SYSCLK_0  [get_ports sysclk0_clk_p ]
 
-#######################################################################
-#                   Timing Constraints
-#######################################################################
-
-set_false_path -from [get_ports pcie_perstn]
-set_false_path -from [get_ports resetn]
-set pcie_clk_pin [get_pins meep_shell_inst/qdma_0/axi_aclk]
-
+# The clock below doesn't need to be created as it is fixed to the MMCM and it creates the constraint itself
+#create_clock -period 10.000 -name SYSCLK_1      [get_ports sysclk1_clk_p]

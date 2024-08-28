@@ -35,7 +35,8 @@ connect_bd_intf_net [get_bd_intf_pins bscan_prim/m1_bscan] [get_bd_intf_pins deb
 if { $JTAGMode == "bscan" } {
   make_bd_intf_pins_external  [get_bd_intf_pins bscan_prim/m0_bscan]
   set_property name $JTAGLabl [get_bd_intf_ports m0_bscan_0]
-} else {
+}
+if { $JTAGMode == "jtag" } {
   set bscan2jtag [ create_bd_cell -type ip -vlnv xilinx.com:ip:bscan_jtag:1.0 bscan2jtag ]
   connect_bd_intf_net [get_bd_intf_pins bscan_prim/m0_bscan] [get_bd_intf_pins bscan2jtag/S_BSCAN]
   make_bd_intf_pins_external  [get_bd_intf_pins bscan2jtag/M_JTAG]

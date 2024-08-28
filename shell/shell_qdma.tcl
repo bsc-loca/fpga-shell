@@ -39,7 +39,7 @@ set_property -dict [ list \
 # Create instance: qdma_0, and set properties
 if { $g_vivado_version eq "2021.2" } {
 	set qdma_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:qdma:4.0 qdma_0 ]
-} elseif {$g_vivado_version eq "2023.2"} {
+} else {
 	set qdma_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:qdma:5.0 qdma_0 ]
 }
 set_property -dict [ list \
@@ -144,19 +144,24 @@ set pcie_xbar_rst_pin [get_bd_pins proc_sys_rst_pcie/interconnect_aresetn]
 ################################################################
 # PCIe-JTAG debugger
 ################################################################
-if { $PCIeJTAG == true } {
-
-	set_property -dict [list CONFIG.cfg_ext_if {true}] $qdma_0
-	set debug_bridge [create_bd_cell -type ip -vlnv xilinx.com:ip:debug_bridge:3.0 debug_bridge_0]
-	set_property -dict [list CONFIG.C_DEBUG_MODE {6} CONFIG.C_PCIE_EXT_CFG_BASE_ADDR {0xe80}] $debug_bridge
-	connect_bd_net [get_bd_pins debug_bridge_0/clk] $pcie_clk_pin
-	connect_bd_intf_net [get_bd_intf_pins qdma_0/pcie_cfg_ext] [get_bd_intf_pins debug_bridge_0/pcie3_cfg_ext]
-	make_bd_pins_external  [get_bd_pins debug_bridge_0/tap_tms] [get_bd_pins debug_bridge_0/tap_tck] [get_bd_pins debug_bridge_0/tap_tdi] [get_bd_pins debug_bridge_0/tap_tdo]
-	set_property name jtag_tdo [get_bd_ports tap_tdo_0]
-	set_property name jtag_tms [get_bd_ports tap_tms_0]
-	set_property name jtag_tck [get_bd_ports tap_tck_0]
-	set_property name jtag_tdi [get_bd_ports tap_tdi_0]
-
+if { $PCIeJTAG != "" } {
+    set_property -dict [list CONFIG.cfg_ext_if {true}] $qdma_0
+    set pci2jtg_bridge [create_bd_cell -type ip -vlnv xilinx.com:ip:debug_bridge:3.0 pci2jtg_bridge]
+    set_property -dict [list CONFIG.C_DEBUG_MODE {6} CONFIG.C_PCIE_EXT_CFG_BASE_ADDR {0xe80}] $pci2jtg_bridge
+    # global clock buffer for JTAG tck to prevent Vivado inserting it implicitely and include it to feedback loop of last clock divider
+    set jtag_tck_buf [create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 jtag_tck_buf]
+    set_property -dict [list CONFIG.C_BUF_TYPE {BUFG}] $jtag_tck_buf
+    connect_bd_net [get_bd_pins pci2jtg_bridge/clk] $pcie_clk_pin
+    connect_bd_net [get_bd_pins pci2jtg_bridge/tap_tck] [get_bd_pins jtag_tck_buf/BUFG_I]
+    connect_bd_intf_net [get_bd_intf_pins qdma_0/pcie_cfg_ext] [get_bd_intf_pins pci2jtg_bridge/pcie3_cfg_ext]
+    make_bd_pins_external [get_bd_pins pci2jtg_bridge/tap_tms] \
+                          [get_bd_pins pci2jtg_bridge/tap_tdi] \
+                          [get_bd_pins pci2jtg_bridge/tap_tdo] \
+                          [get_bd_pins jtag_tck_buf/BUFG_O]
+    set_property name ${PCIeJTAG}_tdo [get_bd_ports tap_tdo_0]
+    set_property name ${PCIeJTAG}_tms [get_bd_ports tap_tms_0]
+    set_property name ${PCIeJTAG}_tdi [get_bd_ports tap_tdi_0]
+    set_property name ${PCIeJTAG}_tck [get_bd_ports BUFG_O_0]
 }
 
 
