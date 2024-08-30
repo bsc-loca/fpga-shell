@@ -170,10 +170,7 @@ if { ${ETHdmaMem} eq "hbm" } {
 } elseif { ${ETHdmaMem} eq "ddr" } {
 
   #Modify the interconnect to fit three additional interfaces
-  set_property -dict [list \
-    CONFIG.NUM_MI {2} \
-    CONFIG.NUM_SI {5} \
-  ] [get_bd_cells axi_xbar_pcie]
+  set_property -dict [list CONFIG.NUM_SI {5}] [get_bd_cells axi_xbar_pcie]
 
   #Connect rx, tx and sg to their respective new Axi_master bus in interconnect
   connect_bd_intf_net [get_bd_intf_pins ${EthHierName}/m_axi_rx] -boundary_type upper [get_bd_intf_pins axi_xbar_pcie/S02_AXI]

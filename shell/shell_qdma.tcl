@@ -169,17 +169,20 @@ if { $PCIeJTAG != "" } {
 # QDMA Memory Map interface + BROM with system information
 ################################################################
 
+# First enable the AXI Lite interface in the qdma IP:
+set_property -dict [list CONFIG.axilite_master_en {true}] $qdma_0
+
 # Create an interconnect for the PCIe AXI Lite interface
-set axi_xbar_pcie_cell [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_xbar_pcie]
-connect_bd_intf_net [get_bd_intf_pins qdma_0/M_AXI] -boundary_type upper [get_bd_intf_pins axi_xbar_pcie/S00_AXI]
-connect_bd_net $pcie_clk_pin [get_bd_pins axi_xbar_pcie/ACLK]
-connect_bd_net $pcie_xbar_rst_pin [get_bd_pins axi_xbar_pcie/ARESETN]
-connect_bd_net $pcie_rst_pin [get_bd_pins axi_xbar_pcie/S00_ARESETN]
-connect_bd_net $pcie_clk_pin [get_bd_pins axi_xbar_pcie/S00_ACLK]
-set_property -dict [list CONFIG.NUM_MI {1}] $axi_xbar_pcie_cell
-set_property -dict [list CONFIG.S00_HAS_REGSLICE {4}] $axi_xbar_pcie_cell
-connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ACLK] $pcie_clk_pin
-connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ARESETN] $pcie_rst_pin
+create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_xbar_pcie_lite
+connect_bd_intf_net [get_bd_intf_pins qdma_0/M_AXI_LITE] [get_bd_intf_pins axi_xbar_pcie_lite/S00_AXI]
+connect_bd_net $pcie_clk_pin [get_bd_pins axi_xbar_pcie_lite/ACLK]
+connect_bd_net $pcie_xbar_rst_pin [get_bd_pins axi_xbar_pcie_lite/ARESETN]
+connect_bd_net $pcie_rst_pin [get_bd_pins axi_xbar_pcie_lite/S00_ARESETN]
+connect_bd_net $pcie_clk_pin [get_bd_pins axi_xbar_pcie_lite/S00_ACLK]
+set_property -dict [list CONFIG.NUM_MI {1}] [get_bd_cells axi_xbar_pcie_lite]
+connect_bd_net [get_bd_pins axi_xbar_pcie_lite/M00_ACLK] $pcie_clk_pin
+connect_bd_net [get_bd_pins axi_xbar_pcie_lite/M00_ARESETN] $pcie_rst_pin
+
 # There is at least a BROM connected to the PCIe AXI LIte interface
 set slv_axi_ninstances 1
 
@@ -208,7 +211,7 @@ connect_bd_net [get_bd_pins axi_brom_system/bram_we_a] [get_bd_pins meep_rom/wea
 connect_bd_net [get_bd_pins axi_brom_system/s_axi_aclk]  $pcie_clk_pin
 connect_bd_net [get_bd_pins axi_brom_system/s_axi_aresetn]  $pcie_rst_pin
 
-connect_bd_intf_net [get_bd_intf_pins axi_brom_system/S_AXI] -boundary_type upper [get_bd_intf_pins axi_xbar_pcie/M00_AXI]
+connect_bd_intf_net [get_bd_intf_pins axi_brom_system/S_AXI] [get_bd_intf_pins axi_xbar_pcie_lite/M00_AXI]
 
 # Crete hierarchy to beautify this block
 group_bd_cells SHELL_ROM [get_bd_cells meep_rom] [get_bd_cells axi_brom_system]

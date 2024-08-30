@@ -30,9 +30,6 @@ if { $GPIOList eq "" } {
 	set InitValue [dict get $GPIOList InitValue]
 }
 
-# First enable the AXI Lite interface in the qdma IP:
-
-set_property -dict [list CONFIG.axilite_master_en {true}] $qdma_0
 
 putdebugs "Calling to GPIO: $GPIOList"
 
@@ -42,18 +39,11 @@ make_bd_pins_external  [get_bd_pins axi_gpio_0/gpio_io_o]
 set_property name $IntfName [get_bd_ports gpio_io_o_0]
 set_property -dict [list CONFIG.C_DOUT_DEFAULT $InitValue] [get_bd_cells axi_gpio_0]
 
-create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_xbar_pcie_lite
-connect_bd_intf_net [get_bd_intf_pins qdma_0/M_AXI_LITE] -boundary_type upper [get_bd_intf_pins axi_xbar_pcie_lite/S00_AXI]
-connect_bd_net $pcie_clk_pin [get_bd_pins axi_xbar_pcie_lite/ACLK]
-connect_bd_net $pcie_xbar_rst_pin [get_bd_pins axi_xbar_pcie_lite/ARESETN]
-connect_bd_net $pcie_rst_pin [get_bd_pins axi_xbar_pcie_lite/S00_ARESETN]
-connect_bd_net $pcie_clk_pin [get_bd_pins axi_xbar_pcie_lite/S00_ACLK]
-set_property -dict [list CONFIG.NUM_MI {1}] [get_bd_cells axi_xbar_pcie_lite]
-connect_bd_net [get_bd_pins axi_xbar_pcie_lite/M00_ACLK] $pcie_clk_pin
-connect_bd_net [get_bd_pins axi_xbar_pcie_lite/M00_ARESETN] $pcie_rst_pin
+set_property -dict [list CONFIG.NUM_MI {2}] [get_bd_cells axi_xbar_pcie_lite]
+connect_bd_net [get_bd_pins axi_xbar_pcie_lite/M01_ACLK] $pcie_clk_pin
+connect_bd_net [get_bd_pins axi_xbar_pcie_lite/M01_ARESETN] $pcie_rst_pin
 
-
-connect_bd_intf_net -boundary_type upper [get_bd_intf_pins axi_xbar_pcie_lite/M00_AXI] [get_bd_intf_pins axi_gpio_0/S_AXI]
+connect_bd_intf_net [get_bd_intf_pins axi_xbar_pcie_lite/M01_AXI] [get_bd_intf_pins axi_gpio_0/S_AXI]
 
 connect_bd_net [get_bd_pins axi_gpio_0/s_axi_aclk] $pcie_clk_pin
 connect_bd_net [get_bd_pins axi_gpio_0/s_axi_aresetn] $pcie_rst_pin
