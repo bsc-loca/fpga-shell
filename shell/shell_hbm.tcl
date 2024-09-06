@@ -252,26 +252,20 @@ if { [info exists hbm_inst] == 0 } {
 	## IF PCIe has a direct access to the main memory, open an HBM channel for it
 	## PCIeDMAdone is set on shell_qdma.tcl
 	save_bd_design
-	if { $PCIeDMA eq "dma" && $PCIeDMAdone == 0} {
+	if { $PCIeDMA == "dma" && $PCIeHBMCh != "ddr" && $PCIeDMAdone == 0} {
 
-                putmeeps "Deploying AXI HBM DMA: $slv_axi_ninstances"
+                connect_bd_net [get_bd_pins axi_xbar_pcie/ACLK]    $pcie_clk_pin
+                connect_bd_net [get_bd_pins axi_xbar_pcie/ARESETN] $pcie_xbar_rst_pin
 
-                set_property -dict [list CONFIG.NUM_MI [expr $slv_axi_ninstances + 1]] [get_bd_cells axi_xbar_pcie]	
-                connect_bd_net [get_bd_pins axi_xbar_pcie/M0${slv_axi_ninstances}_ACLK]    $pcie_clk_pin
-                connect_bd_net [get_bd_pins axi_xbar_pcie/M0${slv_axi_ninstances}_ARESETN] $pcie_rst_pin
-
-                if { $PCIeHBMCh == "" } {
-                  set PCIeHBMCh 31
-                  putmeeps "PCIe DMA channel for HBM is not listed, setting it by default to the highest one: $PCIeHBMCh"
-                }
+                connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ACLK]    $pcie_clk_pin
+                connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ARESETN] $pcie_rst_pin
 
                 set_property -dict [list CONFIG.USER_SAXI_${PCIeHBMCh} {TRUE}] [get_bd_cells hbm_0]
 
-                connect_bd_intf_net [get_bd_intf_pins hbm_0/SAXI_${PCIeHBMCh}${HBM_AXI_LABEL}] [get_bd_intf_pins axi_xbar_pcie/M0${slv_axi_ninstances}_AXI]
+                connect_bd_intf_net [get_bd_intf_pins hbm_0/SAXI_${PCIeHBMCh}${HBM_AXI_LABEL}] [get_bd_intf_pins axi_xbar_pcie/M00_AXI]
                 connect_bd_net      [get_bd_pins      hbm_0/AXI_${PCIeHBMCh}_ACLK]     $pcie_clk_pin
                 connect_bd_net      [get_bd_pins      hbm_0/AXI_${PCIeHBMCh}_ARESET_N] $pcie_rst_pin
 
-                incr slv_axi_ninstances
                 set PCIeDMAdone 1
 	}
 

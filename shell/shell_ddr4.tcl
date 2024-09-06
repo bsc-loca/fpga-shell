@@ -138,26 +138,24 @@ connect_bd_net [get_bd_pins $ddr_dev/c0_ddr4_ui_clk] [get_bd_pins mem_calib_sync
 connect_bd_net [get_bd_pins $ddr_dev/c0_ddr4_aresetn] [get_bd_pins mem_calib_sync/peripheral_aresetn]
 
 #Modify AXI INTERCONNECT to add mem_axi on S01 and M01 to DDR4
-set axi_xbar_pcie_cell [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_xbar_pcie]
-connect_bd_intf_net [get_bd_intf_pins qdma_0/M_AXI] [get_bd_intf_pins axi_xbar_pcie/S00_AXI]
-connect_bd_net $pcie_clk_pin [get_bd_pins axi_xbar_pcie/ACLK]
-connect_bd_net $pcie_xbar_rst_pin [get_bd_pins axi_xbar_pcie/ARESETN]
-connect_bd_net $pcie_rst_pin [get_bd_pins axi_xbar_pcie/S00_ARESETN]
-connect_bd_net $pcie_clk_pin [get_bd_pins axi_xbar_pcie/S00_ACLK]
-set_property -dict [list CONFIG.NUM_MI {1}] $axi_xbar_pcie_cell
-set_property -dict [list CONFIG.NUM_SI {2}] $axi_xbar_pcie_cell
+set_property -dict [list CONFIG.NUM_SI [expr $mst_axi_ninstances + 1]] $axi_xbar_pcie
 
 #ADD additional signals S01_ACLK, S01_ARESETN, M01_ACLK, M01_ARESETN
-connect_bd_net [get_bd_pins axi_xbar_pcie/S01_ACLK] [get_bd_pins clk_wiz_1/clk_out1]
-connect_bd_net [get_bd_pins axi_xbar_pcie/S01_ARESETN] [get_bd_pins rst_ea_CLK0/peripheral_aresetn]
-connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ACLK] [get_bd_pins $ddr_dev/c0_ddr4_ui_clk] 
-connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ARESETN] [get_bd_pins mem_calib_sync/peripheral_aresetn]
+connect_bd_net [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ACLK] [get_bd_pins clk_wiz_1/clk_out1]
+connect_bd_net [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ARESETN] [get_bd_pins rst_ea_CLK0/peripheral_aresetn]
 
-#C0_DDR4_S_AXI
-connect_bd_intf_net [get_bd_intf_pins axi_xbar_pcie/M00_AXI] [get_bd_intf_pins $ddr_dev/C0_DDR4_S_AXI]
+if { $PCIeDMA == "dma" && $PCIeHBMCh == "ddr" && $PCIeDMAdone == 0} {
+  connect_bd_net [get_bd_pins axi_xbar_pcie/ACLK]    [get_bd_pins $ddr_dev/c0_ddr4_ui_clk]
+  connect_bd_net [get_bd_pins axi_xbar_pcie/ARESETN] [get_bd_pins mem_calib_sync/peripheral_aresetn]
+  connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ACLK] [get_bd_pins $ddr_dev/c0_ddr4_ui_clk]
+  connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ARESETN] [get_bd_pins mem_calib_sync/peripheral_aresetn]
+  connect_bd_intf_net [get_bd_intf_pins axi_xbar_pcie/M00_AXI] [get_bd_intf_pins $ddr_dev/C0_DDR4_S_AXI]
+  set PCIeDMAdone 1
+}
 
 #MEM_AXI
-connect_bd_intf_net [get_bd_intf_ports $DDR4intf] [get_bd_intf_pins axi_xbar_pcie/S01_AXI]
+connect_bd_intf_net [get_bd_intf_ports $DDR4intf] [get_bd_intf_pins axi_xbar_pcie/S0${mst_axi_ninstances}_AXI]
+incr mst_axi_ninstances
 #Lets associate a clock to the frequency of the mem_axi bus
 set_property CONFIG.ASSOCIATED_BUSIF [get_property CONFIG.ASSOCIATED_BUSIF [get_bd_ports /$DDR4name]]$DDR4intf: [get_bd_ports /$DDR4name]
 
@@ -196,5 +194,5 @@ connect_bd_net [get_bd_pins gndx1/dout]  [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctr
 connect_bd_net [get_bd_pins gndx32/dout] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_araddr]  [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_awaddr]  [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_wdata]
 
 #Set address space
-assign_bd_address -offset 0x00000000 -range 0x000200000000 -target_address_space [get_bd_addr_spaces qdma_0/M_AXI] [get_bd_addr_segs ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] -force
-assign_bd_address -offset 0x00000000 -range 0x000200000000 -target_address_space [get_bd_addr_spaces mem_axi]        [get_bd_addr_segs ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] -force
+# assign_bd_address -offset 0x00000000 -range 0x000200000000 -target_address_space [get_bd_addr_spaces qdma_0/M_AXI] [get_bd_addr_segs ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] -force
+# assign_bd_address -offset 0x00000000 -range 0x000200000000 -target_address_space [get_bd_addr_spaces mem_axi]        [get_bd_addr_segs ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] -force

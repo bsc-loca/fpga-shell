@@ -170,22 +170,23 @@ if { ${ETHdmaMem} eq "hbm" } {
 } elseif { ${ETHdmaMem} eq "ddr" } {
 
   #Modify the interconnect to fit three additional interfaces
-  set_property -dict [list CONFIG.NUM_SI {5}] [get_bd_cells axi_xbar_pcie]
+  set_property -dict [list CONFIG.NUM_SI [expr $mst_axi_ninstances + 3]] $axi_xbar_pcie
 
-  #Connect rx, tx and sg to their respective new Axi_master bus in interconnect
-  connect_bd_intf_net [get_bd_intf_pins ${EthHierName}/m_axi_rx] -boundary_type upper [get_bd_intf_pins axi_xbar_pcie/S02_AXI]
-  connect_bd_intf_net [get_bd_intf_pins ${EthHierName}/m_axi_tx] -boundary_type upper [get_bd_intf_pins axi_xbar_pcie/S03_AXI]
-  connect_bd_intf_net [get_bd_intf_pins ${EthHierName}/m_axi_sg] -boundary_type upper [get_bd_intf_pins axi_xbar_pcie/S04_AXI]
-  
-  #Connect rx, tx and sg to their respective clock signal in interconnect
-  connect_bd_net [get_bd_pins ${EthHierName}/rx_clk] [get_bd_pins axi_xbar_pcie/S02_ACLK]
-  connect_bd_net [get_bd_pins ${EthHierName}/tx_clk] [get_bd_pins axi_xbar_pcie/S03_ACLK]
-  connect_bd_net [get_bd_pins ${EthHierName}/s_axi_clk] [get_bd_pins axi_xbar_pcie/S04_ACLK]
-
-  #Connect rx, tx and sg to their respective reset in interconnect
-  connect_bd_net [get_bd_pins ${EthHierName}/rx_rstn] [get_bd_pins axi_xbar_pcie/S02_ARESETN]
-  connect_bd_net [get_bd_pins ${EthHierName}/tx_rstn] [get_bd_pins axi_xbar_pcie/S03_ARESETN]
-  connect_bd_net [get_bd_pins ${EthHierName}/s_axi_resetn] [get_bd_pins axi_xbar_pcie/S04_ARESETN]  
+  #Connect rx to their respective new Axi_master bus in interconnect
+  connect_bd_intf_net [get_bd_intf_pins ${EthHierName}/m_axi_rx] [get_bd_intf_pins axi_xbar_pcie/S0${mst_axi_ninstances}_AXI]
+  connect_bd_net [get_bd_pins ${EthHierName}/rx_clk] [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ACLK]
+  connect_bd_net [get_bd_pins ${EthHierName}/rx_rstn] [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ARESETN]
+  incr mst_axi_ninstances
+  #Connect tx to their respective new Axi_master bus in interconnect
+  connect_bd_intf_net [get_bd_intf_pins ${EthHierName}/m_axi_tx] [get_bd_intf_pins axi_xbar_pcie/S0${mst_axi_ninstances}_AXI]
+  connect_bd_net [get_bd_pins ${EthHierName}/tx_clk] [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ACLK]
+  connect_bd_net [get_bd_pins ${EthHierName}/tx_rstn] [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ARESETN]
+  incr mst_axi_ninstances
+  #Connect sg to their respective new Axi_master bus in interconnect
+  connect_bd_intf_net [get_bd_intf_pins ${EthHierName}/m_axi_sg] [get_bd_intf_pins axi_xbar_pcie/S0${mst_axi_ninstances}_AXI]
+  connect_bd_net [get_bd_pins ${EthHierName}/s_axi_clk] [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ACLK]
+  connect_bd_net [get_bd_pins ${EthHierName}/s_axi_resetn] [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ARESETN]  
+  incr mst_axi_ninstances
 }
 
 save_bd_design
