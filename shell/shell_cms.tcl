@@ -25,7 +25,7 @@ create_bd_cell -type ip -vlnv xilinx.com:ip:cms_subsystem:4.0 cms_subsystem
 #We need a aresetn signal which will be connected to a Processor System reset
 #Setup the cms_reset
 create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 cms_reset
-connect_bd_net [get_bd_pins cms_reset/ext_reset_in] [get_bd_ports pcie_perstn]
+connect_bd_net [get_bd_pins cms_reset/ext_reset_in] [get_bd_pins qdma_0/axi_aresetn]
 connect_bd_net [get_bd_pins cms_reset/slowest_sync_clk] [get_bd_pins clk_wiz_1/clk_out1]
 connect_bd_net [get_bd_pins cms_subsystem/aresetn_ctrl] [get_bd_pins cms_reset/peripheral_aresetn]
 
@@ -160,7 +160,7 @@ if { ($g_board_part != "u280") || ($g_board_part != "u55c") || ($g_board_part !=
   exit 1
 }
 
-#Append cms.sv or cms_ext.sv interfaces file
+#Append cms.sv interfaces file
 set PortList [lappend PortList $g_cms_file]
 
 putmeeps "CMS created"
