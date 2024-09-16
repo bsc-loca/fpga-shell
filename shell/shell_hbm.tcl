@@ -252,7 +252,7 @@ if { [info exists hbm_inst] == 0 } {
 	## IF PCIe has a direct access to the main memory, open an HBM channel for it
 	## PCIeDMAdone is set on shell_qdma.tcl
 	save_bd_design
-	if { $PCIeDMA == "dma" && $PCIeHBMCh != "ddr" && $PCIeDMAdone == 0} {
+	if { $PCIeDMA == "dma" && $PCIedmaMem == "hbm" && $PCIeDMAdone == 0} {
 
                 connect_bd_net [get_bd_pins axi_xbar_pcie/ACLK]    $pcie_clk_pin
                 connect_bd_net [get_bd_pins axi_xbar_pcie/ARESETN] $pcie_xbar_rst_pin

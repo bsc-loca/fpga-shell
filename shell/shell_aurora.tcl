@@ -28,10 +28,17 @@ set AuroraMode   [dict get $AURORAentry Mode]
 # set AuroraUsrClk [dict get $AURORAentry UsrClk]
 set AuroraQSFP   [dict get $AURORAentry qsfpPort]
 set AuroradmaMem [dict get $AURORAentry dmaMem]
-set AuroraHBMCh  [dict get $AURORAentry HBMChan]
 set AuroraAXI    [dict get $AURORAentry AxiIntf]
 set Aurorairq    [dict get $AURORAentry IRQ]
 
+set MemDelimIdx [string first "-" $AuroradmaMem]
+if {$MemDelimIdx >= 0} {
+  set AuroraHBMCh  [string replace $AuroradmaMem 0 $MemDelimIdx    ]
+  set AuroradmaMem [string replace $AuroradmaMem   $MemDelimIdx end]
+} else {
+  set AuroraHBMCh [dict get $ETHentry HBMChan]
+}
+putmeeps "Aurora DMA type is set as $AuroradmaMem (for HBM channel $AuroraHBMCh is used as initial)"
 
 set AuroraaddrWidth [dict get $$AURORAentry AxiAddrWidth]
 set AuroradataWidth [dict get $$AURORAentry AxiDataWidth]

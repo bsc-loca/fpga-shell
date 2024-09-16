@@ -23,8 +23,16 @@ set ETHClkIf   [dict get $ETHentry SyncClk Name]
 set ETHintf    [dict get $ETHentry IntfLabel]
 set ETHqsfp    [dict get $ETHentry qsfpPort]
 set ETHdmaMem  [dict get $ETHentry dmaMem]
-set EthHBMCh   [dict get $ETHentry HBMChan]
 set Ethaxi     [dict get $ETHentry AxiIntf]
+
+set MemDelimIdx [string first "-" $ETHdmaMem]
+if {$MemDelimIdx >= 0} {
+  set EthHBMCh  [string replace $ETHdmaMem 0 $MemDelimIdx    ]
+  set ETHdmaMem [string replace $ETHdmaMem   $MemDelimIdx end]
+} else {
+  set EthHBMCh [dict get $ETHentry HBMChan]
+}
+putmeeps "100GbE DMA type is set as $ETHdmaMem (for HBM channel $EthHBMCh is used as initial)"
 
 set ETHaddrWidth [dict get $ETHentry AxiAddrWidth]
 set ETHdataWidth [dict get $ETHentry AxiDataWidth]

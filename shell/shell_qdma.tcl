@@ -21,7 +21,18 @@ set PCIeDMA    [dict get $PCIEentry Mode]
 set PCIeClkNm  [dict get $PCIEentry ClkName]
 set PCIeRstNm  [dict get $PCIEentry RstName]
 set PCIeJTAG   [dict get $PCIEentry JtagDebEn]
-set PCIeHBMCh  [dict get $PCIEentry HBMChan]
+set PCIedmaMem [dict get $PCIEentry dmaMem]
+
+set PCIeHBMCh "none"
+set MemDelimIdx [string first "-" $PCIedmaMem]
+if {$MemDelimIdx >= 0} {
+  set PCIeHBMCh  [string replace $PCIedmaMem 0 $MemDelimIdx    ]
+  set PCIedmaMem [string replace $PCIedmaMem   $MemDelimIdx end]
+} elseif {[string is digit -strict $PCIedmaMem]} {
+  set PCIeHBMCh  $PCIedmaMem
+  set PCIedmaMem "hbm"
+}
+putmeeps "QDMA memory type is set as $PCIedmaMem (for HBM channel $PCIeHBMCh is used)"
 
 set PortList [lappend PortList $g_pcie_file]
 
@@ -85,7 +96,7 @@ set_property -dict [ list \
 	CONFIG.testname {mm} \
 	CONFIG.tl_pf_enable_reg {1} \
 	] $qdma_0
-if { $PCIeHBMCh == "ddr" } {
+if { $PCIedmaMem == "ddr" } {
   set_property -dict [list CONFIG.pl_link_cap_max_link_speed {8.0_GT/s}] $qdma_0
 }
 

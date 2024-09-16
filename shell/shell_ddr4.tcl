@@ -127,15 +127,11 @@ set_property name ddr4_sdram_c${DDR4ChNum} [get_bd_intf_ports C0_DDR4_0]
 set mem_calib_complete [ create_bd_port -dir O -from 0 -to 0 -type rst $DDR4Ready ]
 connect_bd_net [get_bd_ports mem_calib_complete] [get_bd_pins $ddr_dev/c0_init_calib_complete]
 
-set mem_calib_sync [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 mem_calib_sync ]
-  set_property -dict [ list \
-   CONFIG.C_AUX_RESET_HIGH {0} \
-  ] $mem_calib_sync
+create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 ddr_rst_inv
+set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] [get_bd_cells ddr_rst_inv]
+connect_bd_net [get_bd_pins $ddr_dev/c0_ddr4_ui_clk_sync_rst] [get_bd_pins ddr_rst_inv/Op1]
+connect_bd_net [get_bd_pins $ddr_dev/c0_ddr4_aresetn]         [get_bd_pins ddr_rst_inv/Res]
 
-# Create instance: mem_calib_sync, and set properties
-connect_bd_net [get_bd_pins $ddr_dev/c0_ddr4_ui_clk_sync_rst] [get_bd_pins mem_calib_sync/ext_reset_in]
-connect_bd_net [get_bd_pins $ddr_dev/c0_ddr4_ui_clk] [get_bd_pins mem_calib_sync/slowest_sync_clk]
-connect_bd_net [get_bd_pins $ddr_dev/c0_ddr4_aresetn] [get_bd_pins mem_calib_sync/peripheral_aresetn]
 
 #Modify AXI INTERCONNECT to add mem_axi on S01 and M01 to DDR4
 set_property -dict [list CONFIG.NUM_SI [expr $mst_axi_ninstances + 1]] $axi_xbar_pcie
@@ -144,11 +140,11 @@ set_property -dict [list CONFIG.NUM_SI [expr $mst_axi_ninstances + 1]] $axi_xbar
 connect_bd_net [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ACLK] [get_bd_pins clk_wiz_1/clk_out1]
 connect_bd_net [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ARESETN] [get_bd_pins rst_ea_CLK0/peripheral_aresetn]
 
-if { $PCIeDMA == "dma" && $PCIeHBMCh == "ddr" && $PCIeDMAdone == 0} {
-  connect_bd_net [get_bd_pins axi_xbar_pcie/ACLK]    [get_bd_pins $ddr_dev/c0_ddr4_ui_clk]
-  connect_bd_net [get_bd_pins axi_xbar_pcie/ARESETN] [get_bd_pins mem_calib_sync/peripheral_aresetn]
+if { $PCIeDMA == "dma" && $PCIedmaMem == "ddr" && $PCIeDMAdone == 0} {
+  connect_bd_net [get_bd_pins axi_xbar_pcie/ACLK]     [get_bd_pins $ddr_dev/c0_ddr4_ui_clk]
   connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ACLK] [get_bd_pins $ddr_dev/c0_ddr4_ui_clk]
-  connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ARESETN] [get_bd_pins mem_calib_sync/peripheral_aresetn]
+  connect_bd_net [get_bd_pins axi_xbar_pcie/ARESETN]     [get_bd_pins ddr_rst_inv/Res]
+  connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ARESETN] [get_bd_pins ddr_rst_inv/Res]
   connect_bd_intf_net [get_bd_intf_pins axi_xbar_pcie/M00_AXI] [get_bd_intf_pins $ddr_dev/C0_DDR4_S_AXI]
   set PCIeDMAdone 1
 }
@@ -159,16 +155,11 @@ incr mst_axi_ninstances
 #Lets associate a clock to the frequency of the mem_axi bus
 set_property CONFIG.ASSOCIATED_BUSIF [get_property CONFIG.ASSOCIATED_BUSIF [get_bd_ports /$DDR4name]]$DDR4intf: [get_bd_ports /$DDR4name]
 
-#AND reset signal
-disconnect_bd_net /rst_ea_CLK0_peripheral_aresetn [get_bd_ports mc_rstn]
-connect_bd_net [get_bd_ports mc_rstn] [get_bd_pins mem_calib_sync/peripheral_aresetn]
-
-
 #SYS_RST due to 'resetn' being active low and SYS_RST being active high we will need an inverter (NOT gate)
 create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 ddrSYSRst
 set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] [get_bd_cells ddrSYSRst]
 connect_bd_net [get_bd_pins $ddr_dev/sys_rst] [get_bd_pins ddrSYSRst/Res]
-connect_bd_net [get_bd_ports resetn] [get_bd_pins ddrSYSRst/Op1]
+connect_bd_net [get_bd_ports $AsyncRstName]   [get_bd_pins ddrSYSRst/Op1]
 
 # Create the HBM cattrip ground connection
 set hbm_cattrip [ create_bd_port -dir O -from 0 -to 0 hbm_cattrip ]
