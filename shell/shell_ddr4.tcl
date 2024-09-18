@@ -36,9 +36,6 @@ set DDR4userWidth [dict get $DDR4entry AxiUserWidth]
 set DDR4axiProt  [string replace $DDR4axi   [string first "-" $DDR4axi] end]
 set DDR4ataWidth [string replace $DDR4axi 0 [string first "-" $DDR4axi]    ]
 
-#it seems it does not do well this command
-set PortList [lappend PortList $g_ddr4_file]
-
 
 putmeeps "Creating DDR4 instance..."
 ### TODO: Region, prot and others can be extracted as the other widths
@@ -79,6 +76,7 @@ set ddr4_axi4 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm
 
 # Create DDR MC instance if doesn't exsists already
 if { [info exists ddr_dev] == 0 || $ddr_dev != "ddr4_$DDR4ChNum"} {
+  set PortList [lappend PortList $g_ddr4_file]
   set ddr_dev ddr4_${DDR4ChNum}
 	
   # Create instance: ddr4_0, and set properties
