@@ -18,12 +18,12 @@
 
 putwarnings $DDR4entry
 
-set DDR4ClkNm  [dict get $DDR4entry SyncClk Label]
 set DDR4Freq   [dict get $DDR4entry SyncClk Freq]
 set DDR4name   [dict get $DDR4entry SyncClk Name]
 set DDR4intf   [dict get $DDR4entry IntfLabel]
 set DDR4Ready  [dict get $DDR4entry CalibDone]
 set DDR4ChNum  [dict get $DDR4entry EnChannel]
+set DDR4ClkNm  [dict get $DDR4entry SyncClk Label]
 set DDR4axi    [dict get $DDR4entry AxiIntf]
 
 set DDR4addrWidth [dict get $DDR4entry AxiAddrWidth]
@@ -106,13 +106,14 @@ if { [info exists ddr_dev] == 0 || $ddr_dev != "ddr4_$DDR4ChNum"} {
  ] $ddr4_inst
 
 # Input CLK
-make_bd_intf_pins_external  [get_bd_intf_pins $ddr_dev/C0_SYS_CLK]
+make_bd_intf_pins_external  [get_bd_intf_pins ${ddr_dev}/C0_SYS_CLK]
 set_property name sysclk${DDR4ChNum} [get_bd_intf_ports C0_SYS_CLK_0]
 
 #DDR io interface
 make_bd_intf_pins_external  [get_bd_intf_pins ${ddr_dev}/C0_DDR4]
 set_property name ddr4_sdram_c${DDR4ChNum} [get_bd_intf_ports C0_DDR4_0]
 
+# Resets
 make_bd_pins_external  [get_bd_pins ddr4_${DDR4ChNum}/c0_init_calib_complete]
 set_property name $DDR4Ready [get_bd_ports c0_init_calib_complete_0]
 
@@ -129,7 +130,7 @@ connect_bd_net [get_bd_pins rst_ea_$DDR4ClkNm/peripheral_reset] [get_bd_pins ddr
    CONFIG.CONST_VAL {0} \
    CONFIG.CONST_WIDTH {32} \
  ] $gndx32
-connect_bd_net [get_bd_pins gndx32/dout] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_araddr]  [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_awaddr]  [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_wdata]
+connect_bd_net [get_bd_pins gndx32/dout] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_araddr] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_awaddr] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_wdata]
 
 #Secondary ports connection which need to be connected to zero
 # Create the HBM cattrip ground connection
@@ -140,13 +141,6 @@ connect_bd_net [get_bd_ports hbm_cattrip] [get_bd_pins gnd_cattrip/dout]
 connect_bd_net [get_bd_pins gnd_cattrip/dout] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_arvalid] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_awvalid] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_bready] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_rready] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_wvalid]
 }
 
-#Modify AXI INTERCONNECT to add mem_axi on S01 and M01 to DDR4
-set_property -dict [list CONFIG.NUM_SI [expr $mst_axi_ninstances + 1]] $axi_xbar_pcie
-
-#ADD additional signals S01_ACLK, S01_ARESETN, M01_ACLK, M01_ARESETN
-connect_bd_net [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ACLK] [get_bd_pins clk_wiz_1/clk_out1]
-connect_bd_net [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ARESETN] [get_bd_pins rst_ea_CLK0/peripheral_aresetn]
-
 if { $PCIeDMA == "dma" && $PCIedmaMem == "ddr" && $PCIeDMAdone == 0} {
   connect_bd_net [get_bd_pins axi_xbar_pcie/ACLK]     [get_bd_pins $ddr_dev/c0_ddr4_ui_clk]
   connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ACLK] [get_bd_pins $ddr_dev/c0_ddr4_ui_clk]
@@ -156,9 +150,13 @@ if { $PCIeDMA == "dma" && $PCIedmaMem == "ddr" && $PCIeDMAdone == 0} {
   set PCIeDMAdone 1
 }
 
-#MEM_AXI
+#Modify AXI INTERCONNECT to add external AXI
+set_property -dict [list CONFIG.NUM_SI [expr $mst_axi_ninstances + 1]] $axi_xbar_pcie
+connect_bd_net [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ACLK] [get_bd_pins clk_wiz_1/clk_out1]
+connect_bd_net [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ARESETN] [get_bd_pins rst_ea_CLK0/peripheral_aresetn]
 connect_bd_intf_net [get_bd_intf_ports $DDR4intf] [get_bd_intf_pins axi_xbar_pcie/S0${mst_axi_ninstances}_AXI]
 incr mst_axi_ninstances
+
 #Lets associate a clock to the frequency of the mem_axi bus
 set_property CONFIG.ASSOCIATED_BUSIF [get_property CONFIG.ASSOCIATED_BUSIF [get_bd_ports /$DDR4name]]$DDR4intf: [get_bd_ports /$DDR4name]
 
