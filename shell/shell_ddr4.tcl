@@ -18,12 +18,13 @@
 
 putwarnings $DDR4entry
 
+set DDR4ClkNm  [dict get $DDR4entry SyncClk Label]
 set DDR4Freq   [dict get $DDR4entry SyncClk Freq]
 set DDR4name   [dict get $DDR4entry SyncClk Name]
 set DDR4intf   [dict get $DDR4entry IntfLabel]
 set DDR4Ready  [dict get $DDR4entry CalibDone]
 set DDR4ChNum  [dict get $DDR4entry EnChannel]
-set DDR4ClkNm  [dict get $DDR4entry ClkName]
+set DDR4axi    [dict get $DDR4entry AxiIntf]
 
 set DDR4addrWidth [dict get $DDR4entry AxiAddrWidth]
 set DDR4dataWidth [dict get $DDR4entry AxiDataWidth]
@@ -31,39 +32,20 @@ set DDR4idWidth   [dict get $DDR4entry AxiIdWidth]
 set DDR4userWidth [dict get $DDR4entry AxiUserWidth]
 ## CAUTION: Axi user signals are not supported as input to the protocol 
 ## converter to DDR4. Hardcoded to 0
-#Static redefinition of widths
-
-set DDR4userWidth 0
-#DDR at least on u280 has 16GB so 34 bits
-set DDR4addrWidth 34
-set DDR4dataWidth 512
-set DDR4idWidth 6
-#Axi clock source (should be always mc_clk, aka memory controller clock)
-set DDR4ClkNm "mc_clk"
-set AXI_freq [get_property CONFIG.FREQ_HZ [get_bd_ports /mc_clk]]
-#frequency from SYS_CLOCK to DDR controller, not AXI clock
-set DDR4Freq 100000000
-#Defines memory calibration signal name
-set DDR4Ready "mem_calib_complete"
-#Defines name for AXI interface, should always be 'mem_axi'
-set DDR4intf "mem_axi"
-putwarnings "Static redefinition of widths: addrw: $DDR4addrWidth; userw: $DDR4userWidth; dataw: $DDR4dataWidth; idw: $DDR4idWidth; Freq: $DDR4Freq from CLK: $DDR4ClkNm"
 
 #it seems it does not do well this command
 set PortList [lappend PortList $g_ddr4_file]
 
 putmeeps "Creating input DDR4 interface..."
+set DDR4axiProt  [string replace $DDR4axi   [string first "-" $DDR4axi] end]
+set DDR4ataWidth [string replace $DDR4axi 0 [string first "-" $DDR4axi]    ]
 set ddr4_axi4 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 $DDR4intf ]
   set_property -dict [ list \
-   CONFIG.ADDR_WIDTH $DDR4addrWidth \
-   CONFIG.ARUSER_WIDTH $DDR4userWidth \
-   CONFIG.AWUSER_WIDTH $DDR4userWidth \
-   CONFIG.BUSER_WIDTH $DDR4userWidth \
-   CONFIG.DATA_WIDTH $DDR4dataWidth \
-   CONFIG.WUSER_WIDTH $DDR4userWidth \
-   CONFIG.RUSER_WIDTH $DDR4userWidth \
-   CONFIG.ID_WIDTH $DDR4idWidth \
-   CONFIG.FREQ_HZ $AXI_freq \
+   CONFIG.ADDR_WIDTH {36} \
+   CONFIG.ARUSER_WIDTH {0} \
+   CONFIG.AWUSER_WIDTH {0} \
+   CONFIG.BUSER_WIDTH {0} \
+   CONFIG.DATA_WIDTH $DDR4ataWidth \
    CONFIG.HAS_BRESP {1} \
    CONFIG.HAS_BURST {1} \
    CONFIG.HAS_CACHE {0} \
@@ -78,7 +60,7 @@ set ddr4_axi4 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm
    CONFIG.NUM_READ_THREADS {16} \
    CONFIG.NUM_WRITE_OUTSTANDING {32} \
    CONFIG.NUM_WRITE_THREADS {16} \
-   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.PROTOCOL $DDR4axiProt \
    CONFIG.READ_WRITE_MODE {READ_WRITE} \
    CONFIG.RUSER_BITS_PER_BYTE {0} \
    CONFIG.SUPPORTS_NARROW_BURST {1} \
@@ -86,14 +68,21 @@ set ddr4_axi4 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm
    ] $ddr4_axi4
 
 putmeeps "Creating DDR4_0 instance..."
+  # if {[info exists ::env(PROTOSYN_RUNTIME_BOARD)] && $::env(PROTOSYN_RUNTIME_BOARD)=="alveou280"} {
+    set DDR4_InClk "9996"
+  # }
+  # if {[info exists ::env(PROTOSYN_RUNTIME_BOARD)] && $::env(PROTOSYN_RUNTIME_BOARD)=="alveou250"} {
+  #   set DDR4_InClk "3332"
+  # }
+
   set ddr_dev ddr4_${DDR4ChNum}
   # Create instance: ddr4_0, and set properties
   # As there is only one channel currently ddr4_dev = ddr4_0
   set ddr4_inst [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4:2.2 $ddr_dev ]
   set_property -dict [ list \
    CONFIG.C0.DDR4_AUTO_AP_COL_A3 {true} \
-   CONFIG.C0.DDR4_AxiAddressWidth $DDR4addrWidth \
-   CONFIG.C0.DDR4_AxiDataWidth $DDR4dataWidth \
+   CONFIG.C0.DDR4_AxiAddressWidth {34} \
+   CONFIG.C0.DDR4_AxiDataWidth {512} \
    CONFIG.C0.DDR4_CLKFBOUT_MULT {15} \
    CONFIG.C0.DDR4_CLKOUT0_DIVIDE {5} \
    CONFIG.C0.DDR4_CasLatency {17} \
@@ -102,7 +91,7 @@ putmeeps "Creating DDR4_0 instance..."
    CONFIG.C0.DDR4_DataWidth {72} \
    CONFIG.C0.DDR4_EN_PARITY {true} \
    CONFIG.C0.DDR4_Ecc {true} \
-   CONFIG.C0.DDR4_InputClockPeriod {9996} \
+   CONFIG.C0.DDR4_InputClockPeriod $DDR4_InClk \
    CONFIG.C0.DDR4_Mem_Add_Map {ROW_COLUMN_BANK_INTLV} \
    CONFIG.C0.DDR4_MemoryPart {MTA18ASF2G72PZ-2G3} \
    CONFIG.C0.DDR4_MemoryType {RDIMMs} \
@@ -117,7 +106,6 @@ save_bd_design
 # Input CLK
 make_bd_intf_pins_external  [get_bd_intf_pins $ddr_dev/C0_SYS_CLK]
 set_property name sysclk${DDR4ChNum} [get_bd_intf_ports C0_SYS_CLK_0]
-set_property CONFIG.FREQ_HZ $DDR4Freq [get_bd_intf_ports /sysclk${DDR4ChNum}]
 
 #DDR io interface
 make_bd_intf_pins_external  [get_bd_intf_pins ${ddr_dev}/C0_DDR4]
@@ -155,11 +143,7 @@ incr mst_axi_ninstances
 #Lets associate a clock to the frequency of the mem_axi bus
 set_property CONFIG.ASSOCIATED_BUSIF [get_property CONFIG.ASSOCIATED_BUSIF [get_bd_ports /$DDR4name]]$DDR4intf: [get_bd_ports /$DDR4name]
 
-#SYS_RST due to 'resetn' being active low and SYS_RST being active high we will need an inverter (NOT gate)
-create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 ddrSYSRst
-set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] [get_bd_cells ddrSYSRst]
-connect_bd_net [get_bd_pins $ddr_dev/sys_rst] [get_bd_pins ddrSYSRst/Res]
-connect_bd_net [get_bd_ports $AsyncRstName]   [get_bd_pins ddrSYSRst/Op1]
+connect_bd_net [get_bd_pins $ddr_dev/sys_rst] [get_bd_pins rst_ea_$DDR4ClkNm/peripheral_reset]
 
 # Create the HBM cattrip ground connection
 set hbm_cattrip [ create_bd_port -dir O -from 0 -to 0 hbm_cattrip ]
