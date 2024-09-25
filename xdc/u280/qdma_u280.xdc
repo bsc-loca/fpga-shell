@@ -110,3 +110,13 @@ set pci_jtck [get_clocks -of_objects [get_pins -hierarchical jtag_tck_buf/BUFG_O
 set_max_delay -datapath_only -from $sys1_clk -to $pci_jtck [expr [get_property -min period $sys1_clk] * 0.9    ]
 set_max_delay -datapath_only -from $pci_jtck -to $sys1_clk [expr [get_property -min period $pci_jtck] * 0.9 / 2]
 #--------------------------------------------
+
+#----------------- SDRAM CDC -------------------
+# Timing constraints for CDC in SDRAM user interface with at least 1st system synthesized clock,
+# particularly in HBM APB which is disabled but clocked by fixed external clock
+set mref_clk [get_clocks -of_objects [get_ports sysclk0_clk_p]]
+# set_false_path -from $xxx_clk -to $yyy_clk
+# controlling resync paths to be less than source clock period
+# (-datapath_only to exclude clock paths)
+set_max_delay -datapath_only -from $sys1_clk -to $mref_clk [expr [get_property -min period $sys1_clk] * 0.9]
+set_max_delay -datapath_only -from $mref_clk -to $sys1_clk [expr [get_property -min period $mref_clk] * 0.9]

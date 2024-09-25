@@ -41,7 +41,7 @@ putmeeps "Creating DDR4 instance..."
 ### TODO: Region, prot and others can be extracted as the other widths
 set ddr4_axi4 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 $DDR4intf ]
   set_property -dict [ list \
-   CONFIG.ADDR_WIDTH {36} \
+   CONFIG.ADDR_WIDTH $DDRaddrWidth \
    CONFIG.ARUSER_WIDTH {0} \
    CONFIG.AWUSER_WIDTH {0} \
    CONFIG.BUSER_WIDTH {0} \
@@ -83,7 +83,7 @@ if { [info exists ddr_dev] == 0 || $ddr_dev != "ddr4_$DDR4ChNum"} {
   set ddr4_inst [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4:2.2 $ddr_dev ]
   set_property -dict [ list \
    CONFIG.C0.DDR4_AUTO_AP_COL_A3 {true} \
-   CONFIG.C0.DDR4_AxiAddressWidth {34} \
+   CONFIG.C0.DDR4_AxiAddressWidth $DDRaddrWidth \
    CONFIG.C0.DDR4_AxiDataWidth {512} \
    CONFIG.C0.DDR4_CLKFBOUT_MULT {15} \
    CONFIG.C0.DDR4_CLKOUT0_DIVIDE {5} \
@@ -112,8 +112,15 @@ make_bd_intf_pins_external  [get_bd_intf_pins ${ddr_dev}/C0_DDR4]
 set_property name ddr4_sdram_c${DDR4ChNum} [get_bd_intf_ports C0_DDR4_0]
 
 # Resets
-make_bd_pins_external  [get_bd_pins ddr4_${DDR4ChNum}/c0_init_calib_complete]
-set_property name $DDR4Ready [get_bd_ports c0_init_calib_complete_0]
+set ddr_calib_sync [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 ddr_calib_sync ]
+set_property -dict [ list \
+CONFIG.C_AUX_RESET_HIGH {0} \
+] $ddr_calib_sync
+connect_bd_net [get_bd_pins ddr_calib_sync/ext_reset_in] [get_bd_pins ddr_calib_sync/aux_reset_in] [get_bd_pins ddr4_${DDR4ChNum}/c0_init_calib_complete]
+connect_bd_net [get_bd_pins ddr_calib_sync/slowest_sync_clk] [get_bd_pins rst_ea_$DDR4ClkNm/slowest_sync_clk]
+connect_bd_net [get_bd_pins ddr_calib_sync/dcm_locked] [get_bd_pins clk_wiz_1/locked]
+make_bd_pins_external [get_bd_pins ddr_calib_sync/peripheral_aresetn]
+set_property name $DDR4Ready [get_bd_ports peripheral_aresetn_0]
 
 create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_ddrRst
 set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] [get_bd_cells util_vector_logic_ddrRst]
@@ -150,8 +157,8 @@ if { $PCIeDMA == "dma" && $PCIedmaMem == "ddr" && $PCIeDMAdone == 0} {
 
 #Modify AXI INTERCONNECT to add external AXI
 set_property -dict [list CONFIG.NUM_SI [expr $mst_axi_ninstances + 1]] $axi_xbar_pcie
-connect_bd_net [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ACLK] [get_bd_pins clk_wiz_1/clk_out1]
-connect_bd_net [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ARESETN] [get_bd_pins rst_ea_CLK0/peripheral_aresetn]
+connect_bd_net [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ACLK]    [get_bd_pins rst_ea_$DDR4ClkNm/slowest_sync_clk]
+connect_bd_net [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ARESETN] [get_bd_pins rst_ea_$DDR4ClkNm/peripheral_aresetn]
 connect_bd_intf_net [get_bd_intf_ports $DDR4intf] [get_bd_intf_pins axi_xbar_pcie/S0${mst_axi_ninstances}_AXI]
 incr mst_axi_ninstances
 

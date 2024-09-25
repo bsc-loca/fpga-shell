@@ -33,6 +33,7 @@ switch $g_board_part {
 		set HBM_AXI_LABEL ""
 		set HBMDensity "8GB"
 		set HBMaddrWidth "33"
+		set DDRaddrWidth "34"
 	}
 	u55c {
 		set HBM_AXI_LABEL "_8HI"
