@@ -32,7 +32,16 @@ if {$MemDelimIdx >= 0} {
 } else {
   set EthHBMCh [dict get $ETHentry HBMChan]
 }
-putmeeps "100GbE DMA type is set as $ETHdmaMem (for HBM channel $EthHBMCh is used as initial)"
+
+if {$ETHdmaMem == "hbm"} {
+  set ETHdmaAddrWidth $HBMaddrWidth
+} elseif {$ETHdmaMem == "ddr"} {
+  set ETHdmaAddrWidth $DDRaddrWidth
+} else {
+  set ETHdmaAddrWidth ""
+}
+
+putmeeps "100GbE DMA type is set as `$ETHdmaMem` with DMA external address width `$ETHdmaAddrWidth` (for HBM channel# `$EthHBMCh` is used as initial)"
 
 set ETHaddrWidth [dict get $ETHentry AxiAddrWidth]
 set ETHdataWidth [dict get $ETHentry AxiDataWidth]
@@ -55,7 +64,7 @@ putdebugs "ETHirq       $ETHirq"
 
 ### Initialize the IPs
 putmeeps "Packaging ETH IP..."
-exec vivado -mode batch -nolog -nojournal -notrace -source $g_root_dir/ip/100GbEthernet/tcl/gen_project.tcl -tclargs $g_board_part $ETHqsfp $ETHdmaMem $ETHFreq $Ethaxi
+exec vivado -mode batch -nolog -nojournal -notrace -source $g_root_dir/ip/100GbEthernet/tcl/gen_project.tcl -tclargs $g_board_part $ETHqsfp $ETHdmaMem $ETHFreq $Ethaxi $ETHdmaAddrWidth
 putmeeps "... Done."
 update_ip_catalog -rebuild
 
