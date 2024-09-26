@@ -38,7 +38,16 @@ if {$MemDelimIdx >= 0} {
 } else {
   set AuroraHBMCh [dict get $ETHentry HBMChan]
 }
-putmeeps "Aurora DMA type is set as $AuroradmaMem (for HBM channel $AuroraHBMCh is used as initial)"
+
+if {$ETHdmaMem == "hbm"} {
+  set AurDmaAddrWidth $HBMaddrWidth
+} elseif {$ETHdmaMem == "ddr"} {
+  set AurDmaAddrWidth $DDRaddrWidth
+} else {
+  set AurDmaAddrWidth ""
+}
+
+putmeeps "Aurora DMA type is set as `$AuroradmaMem` with DMA external address width `$AurDmaAddrWidth` (for HBM channel# `$AuroraHBMCh` is used as initial)"
 
 set AuroraaddrWidth [dict get $$AURORAentry AxiAddrWidth]
 set AuroradataWidth [dict get $$AURORAentry AxiDataWidth]
@@ -55,7 +64,7 @@ if { $AuroraMode == "dma" } {
 
 ### Initialize the IPs
 putmeeps "Packaging Aurora IP..."
-exec vivado -mode batch -nolog -nojournal -notrace -source ./ip/aurora-${AuroraMode}/tcl/gen_project.tcl -tclargs $g_board_part $AuroraQSFP $AuroradmaMem $AuroraFreq $AuroraAXI
+exec vivado -mode batch -nolog -nojournal -notrace -source ./ip/aurora-${AuroraMode}/tcl/gen_project.tcl -tclargs $g_board_part $AuroraQSFP $AuroradmaMem $AuroraFreq $AuroraAXI $AurDmaAddrWidth
 putmeeps "... Done."
 update_ip_catalog -rebuild
 

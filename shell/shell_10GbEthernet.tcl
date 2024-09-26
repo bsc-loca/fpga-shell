@@ -31,7 +31,16 @@ if {$MemDelimIdx >= 0} {
 } else {
   set EthHBMCh [dict get $ETHentry HBMChan]
 }
-putmeeps "10GbE DMA type is set as $ETHdmaMem (for HBM channel $EthHBMCh is used as initial)"
+
+if {$ETHdmaMem == "hbm"} {
+  set ETHdmaAddrWidth $HBMaddrWidth
+} elseif {$ETHdmaMem == "ddr"} {
+  set ETHdmaAddrWidth $DDRaddrWidth
+} else {
+  set ETHdmaAddrWidth ""
+}
+
+putmeeps "10GbE DMA type is set as `$ETHdmaMem` with DMA external address width `$ETHdmaAddrWidth` (for HBM channel# `$EthHBMCh` is used as initial)"
 
 set ETHaddrWidth [dict get $ETHentry AxiAddrWidth]
 set ETHdataWidth [dict get $ETHentry AxiDataWidth]
