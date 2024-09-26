@@ -20,7 +20,8 @@
 ### Others
 assign_bd_address
 set_property offset 0x00000000 [get_bd_addr_segs {qdma_0/M_AXI_LITE/SEG_axi_gpio_0_Reg}]
-#set_property range 128 [get_bd_addr_segs {qdma_0/M_AXI_LITE/SEG_axi_brom_system_Mem0}]
+set_property range  0x00001000 [get_bd_addr_segs {qdma_0/M_AXI_LITE/SEG_axi_gpio_0_Reg}]
+set_property offset 0x00002000 [get_bd_addr_segs {qdma_0/M_AXI_LITE/SEG_axi_brom_system_Mem0}]
 
 #validate_bd_design
 save_bd_design
