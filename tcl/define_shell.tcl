@@ -164,7 +164,7 @@ proc ShellInterfaceDefinition { ShellInterfacesList ClockList DefinitionFile She
 					dict set d_device Mode       [lindex $fields 7]
 					dict set d_device SliceRegEn [lindex $fields 8]
 					dict set d_device JtagDebEn  [lindex $fields 9]
-					dict set d_device HBMChan    [lindex $fields 10]
+					dict set d_device dmaMem     [lindex $fields 10]
 				}	
 				if { "${device}" == "UART" } {
 					dict set d_device Mode [lindex $fields 6]	
@@ -176,9 +176,7 @@ proc ShellInterfaceDefinition { ShellInterfacesList ClockList DefinitionFile She
 					dict set d_device EnChannel [lindex $fields 7]
 				}
 				if { "${device}" == "DDR4" } {
-					dict set d_device IntfLabel [lindex $fields 2]
-					#dict set d_device ClkName   "ui_clk"
-					dict set d_device ClkName   [lindex $fields 8]
+					dict set d_device AxiIntf   [lindex $fields 3]	
 					dict set d_device CalibDone [lindex $fields 6]
 					dict set d_device EnChannel [lindex $fields 7]
 				}

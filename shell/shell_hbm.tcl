@@ -190,9 +190,9 @@ if { [info exists hbm_inst] == 0 } {
 	set_property name sysclk0 [get_bd_intf_ports CLK_IN_D_0]
 	connect_bd_net [get_bd_pins util_ds_buf_hbm_clk/IBUF_OUT] [get_bd_pins hbm_0/HBM_REF_CLK_0]
 	connect_bd_net [get_bd_pins util_ds_buf_hbm_clk/IBUF_OUT] [get_bd_pins hbm_0/HBM_REF_CLK_1]
-	### TODO: APB CLOCK Can't be the same as ACLK. Needs to be a different source
-	connect_bd_net [get_bd_pins hbm_0/APB_0_PCLK] $APBClockPin
-	connect_bd_net [get_bd_pins hbm_0/APB_1_PCLK] $APBClockPin
+	### TODO: APB CLOCK Can't be the same as ACLK. Needs to be a different source and in proper range
+	connect_bd_net [get_bd_pins hbm_0/APB_0_PCLK] [get_bd_pins hbm_0/HBM_REF_CLK_0]; # $APBClockPin
+	connect_bd_net [get_bd_pins hbm_0/APB_1_PCLK] [get_bd_pins hbm_0/HBM_REF_CLK_1]; # $APBClockPin
 	set hbm_cattrip [ create_bd_port -dir O -from 0 -to 0 hbm_cattrip ]
 	## One CATTRIP per stack, OR it
 	create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 hbm_cattrip_or
@@ -202,17 +202,31 @@ if { [info exists hbm_inst] == 0 } {
 	connect_bd_net [get_bd_ports hbm_cattrip] [get_bd_pins hbm_cattrip_or/Res]
 	
 	if { $HBMReady != ""} {
-            create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 APB_rst_and
-	    set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {and} CONFIG.LOGO_FILE {data/sym_andgate.png}] [get_bd_cells APB_rst_and]
-	    connect_bd_net [get_bd_pins hbm_0/apb_complete_0] [get_bd_pins APB_rst_and/Op1]
-	    connect_bd_net [get_bd_pins hbm_0/apb_complete_1] [get_bd_pins APB_rst_and/Op2]
-            make_bd_pins_external  [get_bd_pins APB_rst_and/Res]
-            set_property name $HBMReady [get_bd_ports Res_0]
+            set hbm_calib_sync [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 hbm_calib_sync ]
+            set_property -dict [ list \
+            CONFIG.C_AUX_RESET_HIGH {0} \
+            ] $hbm_calib_sync
+
+            connect_bd_net [get_bd_pins hbm_calib_sync/ext_reset_in] [get_bd_pins hbm_0/apb_complete_0]
+            connect_bd_net [get_bd_pins hbm_calib_sync/aux_reset_in] [get_bd_pins hbm_0/apb_complete_1]
+            connect_bd_net [get_bd_pins hbm_calib_sync/slowest_sync_clk] $HBMClockPin
+            connect_bd_net [get_bd_pins hbm_calib_sync/dcm_locked]   [get_bd_pins clk_wiz_1/locked]
+
+            make_bd_pins_external [get_bd_pins hbm_calib_sync/peripheral_aresetn]
+            set_property name $HBMReady [get_bd_ports peripheral_aresetn_0]
+
+          #     create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 APB_rst_or
+          #     set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {and} CONFIG.LOGO_FILE {data/sym_andgate.png}] [get_bd_cells APB_rst_or]
+          #     connect_bd_net [get_bd_pins hbm_0/apb_complete_0] [get_bd_pins APB_rst_or/Op1]
+          #     connect_bd_net [get_bd_pins hbm_0/apb_complete_1] [get_bd_pins APB_rst_or/Op2]
+          #     make_bd_pins_external  [get_bd_pins APB_rst_or/Res]
+          #     set_property name $HBMReady [get_bd_ports Res_0]
 	}
 
 	#foreach Number of APB interfaces, one per stack
-	connect_bd_net [get_bd_pins hbm_0/APB_0_PRESET_N] $APBRstPin
-	connect_bd_net [get_bd_pins hbm_0/APB_1_PRESET_N] $APBRstPin
+        #`APB_y_PRESET_N` is asynchronous to `APB_y_PCLK`: https://docs.amd.com/r/en-US/pg276-axi-hbm/Port-Descriptions
+	connect_bd_net [get_bd_pins hbm_0/APB_0_PRESET_N] $HBMRstPin; # $APBRstPin
+	connect_bd_net [get_bd_pins hbm_0/APB_1_PRESET_N] $HBMRstPin; # $APBRstPin
 
 }
 
@@ -252,26 +266,20 @@ if { [info exists hbm_inst] == 0 } {
 	## IF PCIe has a direct access to the main memory, open an HBM channel for it
 	## PCIeDMAdone is set on shell_qdma.tcl
 	save_bd_design
-	if { $PCIeDMA eq "dma" && $PCIeDMAdone == 0} {
+	if { $PCIeDMA == "dma" && $PCIedmaMem == "hbm" && $PCIeDMAdone == 0} {
 
-                putmeeps "Deploying AXI HBM DMA: $slv_axi_ninstances"
+                connect_bd_net [get_bd_pins axi_xbar_pcie/ACLK]    $pcie_clk_pin
+                connect_bd_net [get_bd_pins axi_xbar_pcie/ARESETN] $pcie_xbar_rst_pin
 
-                set_property -dict [list CONFIG.NUM_MI [expr $slv_axi_ninstances + 1]] [get_bd_cells axi_xbar_pcie]	
-                connect_bd_net [get_bd_pins axi_xbar_pcie/M0${slv_axi_ninstances}_ACLK]    $pcie_clk_pin
-                connect_bd_net [get_bd_pins axi_xbar_pcie/M0${slv_axi_ninstances}_ARESETN] $pcie_rst_pin
-
-                if { $PCIeHBMCh == "" } {
-                  set PCIeHBMCh 31
-                  putmeeps "PCIe DMA channel for HBM is not listed, setting it by default to the highest one: $PCIeHBMCh"
-                }
+                connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ACLK]    $pcie_clk_pin
+                connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ARESETN] $pcie_rst_pin
 
                 set_property -dict [list CONFIG.USER_SAXI_${PCIeHBMCh} {TRUE}] [get_bd_cells hbm_0]
 
-                connect_bd_intf_net [get_bd_intf_pins hbm_0/SAXI_${PCIeHBMCh}${HBM_AXI_LABEL}] [get_bd_intf_pins axi_xbar_pcie/M0${slv_axi_ninstances}_AXI]
+                connect_bd_intf_net [get_bd_intf_pins hbm_0/SAXI_${PCIeHBMCh}${HBM_AXI_LABEL}] [get_bd_intf_pins axi_xbar_pcie/M00_AXI]
                 connect_bd_net      [get_bd_pins      hbm_0/AXI_${PCIeHBMCh}_ACLK]     $pcie_clk_pin
                 connect_bd_net      [get_bd_pins      hbm_0/AXI_${PCIeHBMCh}_ARESET_N] $pcie_rst_pin
 
-                incr slv_axi_ninstances
                 set PCIeDMAdone 1
 	}
 

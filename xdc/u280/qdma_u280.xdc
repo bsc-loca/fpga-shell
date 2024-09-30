@@ -83,8 +83,40 @@ set_property PACKAGE_PIN AL11             [get_ports {pci_express_x16_txp[0]} ]
 # Specifying the placement of PCIe clock domain modules into single SLR to facilitate routing
 # https://www.xilinx.com/support/documentation/sw_manuals/xilinx2020_1/ug912-vivado-properties.pdf#page=386
 #Collecting all units from correspondingly PCIe domain,
-set pcie_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical qdma_0/axi_aclk]]]]
+set pcie_clk_units [get_cells -of_objects [get_nets -of_objects [get_pins -hierarchical qdma_0/axi_aclk]]]
 #Setting specific SLR to which PCIe pins are wired since placer may miss it if just "group_name" is applied
 set_property USER_SLR_ASSIGNMENT SLR0 [get_cells "$pcie_clk_units"]
 
 ## ================================
+#----------------- QDMA CDC -------------------
+# Timing constraints for clock domains crossings (CDC) for at least 1st system synthesized clock
+set qdma_clk [get_clocks -of_objects [get_pins -hierarchical qdma_0/axi_aclk]]
+set sys1_clk [get_clocks -of_objects [get_pins -hierarchical clk_wiz_1/clk_out1]]
+# set_false_path -from $xxx_clk -to $yyy_clk
+# controlling resync paths to be less than source clock period
+# (-datapath_only to exclude clock paths)
+set_max_delay -datapath_only -from $qdma_clk -to $sys1_clk [expr [get_property -min period $qdma_clk] * 0.9]
+set_max_delay -datapath_only -from $sys1_clk -to $qdma_clk [expr [get_property -min period $sys1_clk] * 0.9]
+
+#----------------- PCIe JTAG CDC -------------------
+# Timing constraints for clock domains crossings (CDC) for at least 1st system synthesized clock
+# JTAG clock got from QDMA AXI clock inside debug_bridge isn't of clock type by default and is 8 times slower
+create_clock -period [expr [get_property -min period $qdma_clk] * 8] -name PCIE_JTCK [get_pins -hierarchical jtag_tck_buf/BUFG_O]
+set pci_jtck [get_clocks -of_objects [get_pins -hierarchical jtag_tck_buf/BUFG_O]]
+# set_false_path -from $xxx_clk -to $yyy_clk
+# controlling resync paths to be less than source clock period
+# (-datapath_only to exclude clock paths)
+# For JTAG clock we consider both edges
+set_max_delay -datapath_only -from $sys1_clk -to $pci_jtck [expr [get_property -min period $sys1_clk] * 0.9    ]
+set_max_delay -datapath_only -from $pci_jtck -to $sys1_clk [expr [get_property -min period $pci_jtck] * 0.9 / 2]
+#--------------------------------------------
+
+#----------------- SDRAM CDC -------------------
+# Timing constraints for CDC in SDRAM user interface with at least 1st system synthesized clock,
+# particularly in HBM APB which is disabled but clocked by fixed external clock
+set mref_clk [get_clocks -of_objects [get_ports sysclk0_clk_p]]
+# set_false_path -from $xxx_clk -to $yyy_clk
+# controlling resync paths to be less than source clock period
+# (-datapath_only to exclude clock paths)
+set_max_delay -datapath_only -from $sys1_clk -to $mref_clk [expr [get_property -min period $sys1_clk] * 0.9]
+set_max_delay -datapath_only -from $mref_clk -to $sys1_clk [expr [get_property -min period $mref_clk] * 0.9]

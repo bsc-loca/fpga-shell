@@ -23,13 +23,9 @@ switch $g_vivado_version {
 		#body
 		set meep_util_ds_buf "xilinx.com:ip:util_ds_buf:2.1"
 	}
-	2021.2 {
+	default {
 		set meep_util_ds_buf "xilinx.com:ip:util_ds_buf:2.2"
 	}
-	2023.2 {
-		set meep_util_ds_buf "xilinx.com:ip:util_ds_buf:2.2"
-	}
-
 }
 
 switch $g_board_part {
@@ -37,6 +33,7 @@ switch $g_board_part {
 		set HBM_AXI_LABEL ""
 		set HBMDensity "8GB"
 		set HBMaddrWidth "33"
+		set DDRaddrWidth "34"
 	}
 	u55c {
 		set HBM_AXI_LABEL "_8HI"

@@ -21,7 +21,18 @@ set PCIeDMA    [dict get $PCIEentry Mode]
 set PCIeClkNm  [dict get $PCIEentry ClkName]
 set PCIeRstNm  [dict get $PCIEentry RstName]
 set PCIeJTAG   [dict get $PCIEentry JtagDebEn]
-set PCIeHBMCh  [dict get $PCIEentry HBMChan]
+set PCIedmaMem [dict get $PCIEentry dmaMem]
+
+set PCIeHBMCh "none"
+set MemDelimIdx [string first "-" $PCIedmaMem]
+if {$MemDelimIdx >= 0} {
+  set PCIeHBMCh  [string replace $PCIedmaMem 0 $MemDelimIdx    ]
+  set PCIedmaMem [string replace $PCIedmaMem   $MemDelimIdx end]
+} elseif {[string is digit -strict $PCIedmaMem]} {
+  set PCIeHBMCh  $PCIedmaMem
+  set PCIedmaMem "hbm"
+}
+putmeeps "QDMA memory type is set as $PCIedmaMem (for HBM channel $PCIeHBMCh is used)"
 
 set PortList [lappend PortList $g_pcie_file]
 
@@ -39,7 +50,7 @@ set_property -dict [ list \
 # Create instance: qdma_0, and set properties
 if { $g_vivado_version eq "2021.2" } {
 	set qdma_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:qdma:4.0 qdma_0 ]
-} elseif {$g_vivado_version eq "2023.2"} {
+} else {
 	set qdma_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:qdma:5.0 qdma_0 ]
 }
 set_property -dict [ list \
@@ -85,9 +96,11 @@ set_property -dict [ list \
 	CONFIG.testname {mm} \
 	CONFIG.tl_pf_enable_reg {1} \
 	] $qdma_0
+if { $PCIedmaMem == "ddr" } {
+  set_property -dict [list CONFIG.pl_link_cap_max_link_speed {8.0_GT/s}] $qdma_0
+}
 
 # Disable AXI Lite interface
-
 set_property -dict [list CONFIG.axilite_master_en {false}] $qdma_0
 
 
@@ -118,6 +131,9 @@ connect_bd_net [get_bd_pins qdma_0/phy_ready] [get_bd_pins proc_sys_rst_pcie/dcm
 connect_bd_net [get_bd_pins qdma_0/axi_aresetn] [get_bd_pins proc_sys_rst_pcie/ext_reset_in]
 
 
+set pcie_clk_pin [get_bd_pins qdma_0/axi_aclk]
+set pcie_rst_pin [get_bd_pins proc_sys_rst_pcie/peripheral_aresetn]
+set pcie_xbar_rst_pin [get_bd_pins proc_sys_rst_pcie/interconnect_aresetn]
 
 if { $PCIeDMA != "dma" } {
 
@@ -131,32 +147,40 @@ if { $PCIeDMA != "dma" } {
 	set_property name $PCIeClkNm [get_bd_ports axi_aclk_0]
 	set_property name $PCIeRstNm [get_bd_ports axi_aresetn_0]
 	#TODO: Add register slice option to relax timing
+} else {
+    set axi_xbar_pcie [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_xbar_pcie]
+    connect_bd_intf_net [get_bd_intf_pins qdma_0/M_AXI] [get_bd_intf_pins axi_xbar_pcie/S00_AXI]
+    connect_bd_net $pcie_rst_pin [get_bd_pins axi_xbar_pcie/S00_ARESETN]
+    connect_bd_net $pcie_clk_pin [get_bd_pins axi_xbar_pcie/S00_ACLK]
+    set_property -dict [list CONFIG.NUM_MI {1}] $axi_xbar_pcie
+    set mst_axi_ninstances 1
 }
 
 # This variable is used in shell_hbm.tcl
 set PCIeDMAdone 0
 
-set pcie_clk_pin [get_bd_pins qdma_0/axi_aclk]
-set pcie_rst_pin [get_bd_pins proc_sys_rst_pcie/peripheral_aresetn]
-
-set pcie_xbar_rst_pin [get_bd_pins proc_sys_rst_pcie/interconnect_aresetn]
 
 ################################################################
 # PCIe-JTAG debugger
 ################################################################
-if { $PCIeJTAG == true } {
-
-	set_property -dict [list CONFIG.cfg_ext_if {true}] $qdma_0
-	set debug_bridge [create_bd_cell -type ip -vlnv xilinx.com:ip:debug_bridge:3.0 debug_bridge_0]
-	set_property -dict [list CONFIG.C_DEBUG_MODE {6} CONFIG.C_PCIE_EXT_CFG_BASE_ADDR {0xe80}] $debug_bridge
-	connect_bd_net [get_bd_pins debug_bridge_0/clk] $pcie_clk_pin
-	connect_bd_intf_net [get_bd_intf_pins qdma_0/pcie_cfg_ext] [get_bd_intf_pins debug_bridge_0/pcie3_cfg_ext]
-	make_bd_pins_external  [get_bd_pins debug_bridge_0/tap_tms] [get_bd_pins debug_bridge_0/tap_tck] [get_bd_pins debug_bridge_0/tap_tdi] [get_bd_pins debug_bridge_0/tap_tdo]
-	set_property name jtag_tdo [get_bd_ports tap_tdo_0]
-	set_property name jtag_tms [get_bd_ports tap_tms_0]
-	set_property name jtag_tck [get_bd_ports tap_tck_0]
-	set_property name jtag_tdi [get_bd_ports tap_tdi_0]
-
+if { $PCIeJTAG != "" } {
+    set_property -dict [list CONFIG.cfg_ext_if {true}] $qdma_0
+    set pci2jtg_bridge [create_bd_cell -type ip -vlnv xilinx.com:ip:debug_bridge:3.0 pci2jtg_bridge]
+    set_property -dict [list CONFIG.C_DEBUG_MODE {6} CONFIG.C_PCIE_EXT_CFG_BASE_ADDR {0xe80}] $pci2jtg_bridge
+    # global clock buffer for JTAG tck to prevent Vivado inserting it implicitely and include it to feedback loop of last clock divider
+    set jtag_tck_buf [create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 jtag_tck_buf]
+    set_property -dict [list CONFIG.C_BUF_TYPE {BUFG}] $jtag_tck_buf
+    connect_bd_net [get_bd_pins pci2jtg_bridge/clk] $pcie_clk_pin
+    connect_bd_net [get_bd_pins pci2jtg_bridge/tap_tck] [get_bd_pins jtag_tck_buf/BUFG_I]
+    connect_bd_intf_net [get_bd_intf_pins qdma_0/pcie_cfg_ext] [get_bd_intf_pins pci2jtg_bridge/pcie3_cfg_ext]
+    make_bd_pins_external [get_bd_pins pci2jtg_bridge/tap_tms] \
+                          [get_bd_pins pci2jtg_bridge/tap_tdi] \
+                          [get_bd_pins pci2jtg_bridge/tap_tdo] \
+                          [get_bd_pins jtag_tck_buf/BUFG_O]
+    set_property name ${PCIeJTAG}_tdo [get_bd_ports tap_tdo_0]
+    set_property name ${PCIeJTAG}_tms [get_bd_ports tap_tms_0]
+    set_property name ${PCIeJTAG}_tdi [get_bd_ports tap_tdi_0]
+    set_property name ${PCIeJTAG}_tck [get_bd_ports BUFG_O_0]
 }
 
 
@@ -164,19 +188,22 @@ if { $PCIeJTAG == true } {
 # QDMA Memory Map interface + BROM with system information
 ################################################################
 
+# First enable the AXI Lite interface in the qdma IP:
+set_property -dict [list CONFIG.axilite_master_en {true}] $qdma_0
+
 # Create an interconnect for the PCIe AXI Lite interface
-set axi_xbar_pcie_cell [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_xbar_pcie]
-connect_bd_intf_net [get_bd_intf_pins qdma_0/M_AXI] -boundary_type upper [get_bd_intf_pins axi_xbar_pcie/S00_AXI]
-connect_bd_net $pcie_clk_pin [get_bd_pins axi_xbar_pcie/ACLK]
-connect_bd_net $pcie_xbar_rst_pin [get_bd_pins axi_xbar_pcie/ARESETN]
-connect_bd_net $pcie_rst_pin [get_bd_pins axi_xbar_pcie/S00_ARESETN]
-connect_bd_net $pcie_clk_pin [get_bd_pins axi_xbar_pcie/S00_ACLK]
-set_property -dict [list CONFIG.NUM_MI {1}] $axi_xbar_pcie_cell
-set_property -dict [list CONFIG.S00_HAS_REGSLICE {4}] $axi_xbar_pcie_cell
-connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ACLK] $pcie_clk_pin
-connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ARESETN] $pcie_rst_pin
+create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_xbar_pcie_lite
+connect_bd_intf_net [get_bd_intf_pins qdma_0/M_AXI_LITE] [get_bd_intf_pins axi_xbar_pcie_lite/S00_AXI]
+connect_bd_net $pcie_clk_pin [get_bd_pins axi_xbar_pcie_lite/ACLK]
+connect_bd_net $pcie_xbar_rst_pin [get_bd_pins axi_xbar_pcie_lite/ARESETN]
+connect_bd_net $pcie_rst_pin [get_bd_pins axi_xbar_pcie_lite/S00_ARESETN]
+connect_bd_net $pcie_clk_pin [get_bd_pins axi_xbar_pcie_lite/S00_ACLK]
+set_property -dict [list CONFIG.NUM_MI {1}] [get_bd_cells axi_xbar_pcie_lite]
+connect_bd_net [get_bd_pins axi_xbar_pcie_lite/M00_ACLK] $pcie_clk_pin
+connect_bd_net [get_bd_pins axi_xbar_pcie_lite/M00_ARESETN] $pcie_rst_pin
+
 # There is at least a BROM connected to the PCIe AXI LIte interface
-set slv_axi_ninstances 1
+set slv_axilite_ninstances 1
 
 create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_brom_system
 set_property -dict [list CONFIG.PROTOCOL {AXI4LITE} CONFIG.SINGLE_PORT_BRAM {1} CONFIG.READ_LATENCY {8}] [get_bd_cells axi_brom_system]
@@ -203,7 +230,7 @@ connect_bd_net [get_bd_pins axi_brom_system/bram_we_a] [get_bd_pins meep_rom/wea
 connect_bd_net [get_bd_pins axi_brom_system/s_axi_aclk]  $pcie_clk_pin
 connect_bd_net [get_bd_pins axi_brom_system/s_axi_aresetn]  $pcie_rst_pin
 
-connect_bd_intf_net [get_bd_intf_pins axi_brom_system/S_AXI] -boundary_type upper [get_bd_intf_pins axi_xbar_pcie/M00_AXI]
+connect_bd_intf_net [get_bd_intf_pins axi_brom_system/S_AXI] [get_bd_intf_pins axi_xbar_pcie_lite/M00_AXI]
 
 # Crete hierarchy to beautify this block
 group_bd_cells SHELL_ROM [get_bd_cells meep_rom] [get_bd_cells axi_brom_system]
