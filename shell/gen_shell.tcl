@@ -51,8 +51,6 @@ add_files -fileset [get_filesets constrs_1] "$g_root_dir/xdc/$g_board_part/hbm_$
 
 ##if {[info exists $shellIntf]} 
 
-set CMS_disabled 1
-
 foreach dicEntry $ShellEnabledIntf {
 
 	set IntfName [dict get $dicEntry Name]
@@ -68,6 +66,7 @@ foreach dicEntry $ShellEnabledIntf {
 		set DDR4entry $dicEntry
 		source $g_root_dir/shell/shell_ddr4.tcl
 		add_files -fileset [get_filesets constrs_1] "$g_root_dir/xdc/$g_board_part/ddr4_${g_board_part}.xdc"
+		set MemController "DDR"
 	} 
 	
 	if {[regexp -inline -all "HBM" $IntfName] ne "" } {
@@ -121,7 +120,6 @@ foreach dicEntry $ShellEnabledIntf {
 	if {[regexp -inline -all "CMS" $IntfName] ne "" } {
 		source $g_root_dir/shell/shell_cms.tcl	
 		add_files -fileset [get_filesets constrs_1] "$g_root_dir/xdc/$g_board_part/cms_${g_board_part}.xdc"
-		set CMS_disabled 0
 	}
 }
 

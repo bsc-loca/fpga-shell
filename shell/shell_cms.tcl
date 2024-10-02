@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # Author: Joan Teruel Jurado, BSC-CNS
 # Date: 02.05.2024
 # Description: CMS implementation
@@ -29,23 +28,21 @@ connect_bd_net [get_bd_pins cms_reset/ext_reset_in] [get_bd_pins qdma_0/axi_ares
 connect_bd_net [get_bd_pins cms_reset/slowest_sync_clk] [get_bd_pins clk_wiz_1/clk_out1]
 connect_bd_net [get_bd_pins cms_subsystem/aresetn_ctrl] [get_bd_pins cms_reset/peripheral_aresetn]
 
-save_bd_design
-
 #First enable the AXI Lite interface in the qdma IP and increase BAR2 space region
-set_property -dict [list CONFIG.axilite_master_en {true}] $qdma_0
+#set_property -dict [list CONFIG.axilite_master_en {true}] $qdma_0
 set_property CONFIG.pf0_bar2_size_qdma {512} [get_bd_cells qdma_0]
 
 #Connect with AXI pcie lite interconnect
 #First modify interconnect to make space to fit another master
-create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_xbar_pcie_lite
-set_property -dict [list CONFIG.NUM_MI {2}] [get_bd_cells axi_xbar_pcie_lite]  
+set_property -dict [list CONFIG.NUM_MI [expr $slv_axilite_ninstances + 1]] [get_bd_cells axi_xbar_pcie_lite]  
+putmeeps "CMS as slave # $slv_axilite_ninstances"
 
-#Connect M01 aclk and areset signals
-connect_bd_net [get_bd_pins axi_xbar_pcie_lite/M01_ACLK] [get_bd_pins clk_wiz_1/clk_out1]
-connect_bd_net [get_bd_pins axi_xbar_pcie_lite/M01_ARESETN] [get_bd_pins cms_reset/interconnect_aresetn]
+#Connect M0? aclk and areset signals
+connect_bd_net [get_bd_pins axi_xbar_pcie_lite/M0${slv_axilite_ninstances}_ACLK] [get_bd_pins clk_wiz_1/clk_out1]
+connect_bd_net [get_bd_pins axi_xbar_pcie_lite/M0${slv_axilite_ninstances}_ARESETN] [get_bd_pins cms_reset/interconnect_aresetn]
 
-#Connect M01 to s_axi_ctrl from CMS
-connect_bd_intf_net -boundary_type upper [get_bd_intf_pins axi_xbar_pcie_lite/M01_AXI] [get_bd_intf_pins cms_subsystem/s_axi_ctrl]
+#Connect M0? to s_axi_ctrl from CMS
+connect_bd_intf_net -boundary_type upper [get_bd_intf_pins axi_xbar_pcie_lite/M0${slv_axilite_ninstances}_AXI] [get_bd_intf_pins cms_subsystem/s_axi_ctrl]
 
 #Create GPIO port  // not valid for U50
 make_bd_pins_external  [get_bd_pins cms_subsystem/satellite_gpio]
@@ -65,7 +62,7 @@ assign_bd_address -offset 0x40000 -target_address_space /qdma_0/M_AXI_LITE [get_
 
 if { ($g_board_part != "u280") || ($g_board_part != "u55c") || ($g_board_part != "u50")} {
   #SPECIFIC IMPLEMENTATION FOR U280/U55C/U50
-  putwarnings "CMS enabled for U280/U55C/U50"
+  putmeeps "CMS enabled for U280/U55C/U50"
 
   set   fd_mod  [open $g_cms_file    "w"]
   puts $fd_mod "    // CMS"
@@ -82,7 +79,7 @@ if { ($g_board_part != "u280") || ($g_board_part != "u55c") || ($g_board_part !=
   #IF in U280 the memory controller taken is not HBM, we must 'fake' HBM inputs, 
   #In the case of U55C or U50 this is not an issue as there is only HBM 
   if {$MemController eq "HBM"} {
-    putwarnings "CMS connected to HBM"
+    putmeeps "CMS connected to HBM"
     #Connect temp sensors data 1 and 2
     connect_bd_net [get_bd_pins hbm_0/DRAM_0_STAT_TEMP] [get_bd_pins cms_subsystem/hbm_temp_1] 
     connect_bd_net [get_bd_pins hbm_0/DRAM_1_STAT_TEMP] [get_bd_pins cms_subsystem/hbm_temp_2]
@@ -115,44 +112,43 @@ if { ($g_board_part != "u280") || ($g_board_part != "u55c") || ($g_board_part !=
   #SPECIFIC IMPLEMENTATION FOR U200/U250
   putwarnings "CMS enabled for U200/U250"
 
-  set   fd_mod  [open $g_cms_file    "w"]
-  puts $fd_mod "    // CMS"
-  puts $fd_mod "    input [0:0]     satellite_uart_rxd    ,"
-  puts $fd_mod "    output [0:0]    satellite_uart_txd    ,"
-  puts $fd_mod "    input [3:0]     satellite_gpio,"
-  puts $fd_mod ""  
-  puts $fd_mod "    // CMS WITH QSFP"
-  puts $fd_mod "    input [0:0]     qsfp0_modsel_l_0,"
-  puts $fd_mod "    input [0:0]     qsfp1_modsel_l_0,"
-  puts $fd_mod "    input [0:0]     qsfp0_modprs_l_0,"
-  puts $fd_mod "    input [0:0]     qsfp1_modprs_l_0,"
-  puts $fd_mod "    input [0:0]     qsfp0_reset_l_0,"
-  puts $fd_mod "    input [0:0]     qsfp1_reset_l_0,"
-  puts $fd_mod "    input [0:0]     qsfp0_lpmode_0,"
-  puts $fd_mod "    input [0:0]     qsfp1_lpmode_0,"
-  puts $fd_mod "    input [0:0]     qsfp0_int_l_0,"
-  puts $fd_mod "    input [0:0]     qsfp1_int_l_0,"
-  close $fd_mod
-  
-  #Make external qsfpX_int_l
-  make_bd_pins_external  [get_bd_pins cms_subsystem/qsfp0_int_l]
-  make_bd_pins_external  [get_bd_pins cms_subsystem/qsfp1_int_l]
+  #Possible configuration for CMS; right now we do not use QSFP
+  #set   fd_mod  [open $g_cms_file    "w"]
+  #puts $fd_mod "    // CMS"
+  #puts $fd_mod "    input [0:0]     satellite_uart_rxd    ,"
+  #puts $fd_mod "    output [0:0]    satellite_uart_txd    ,"
+  #puts $fd_mod "    input [3:0]     satellite_gpio,"
+  #puts $fd_mod "    // CMS WITH QSFP"
+  #puts $fd_mod "    input [0:0]     qsfp0_modsel_l_0,"
+  #puts $fd_mod "    input [0:0]     qsfp1_modsel_l_0,"
+  #puts $fd_mod "    input [0:0]     qsfp0_modprs_l_0,"
+  #puts $fd_mod "    input [0:0]     qsfp1_modprs_l_0,"
+  #puts $fd_mod "    input [0:0]     qsfp0_reset_l_0,"
+  #puts $fd_mod "    input [0:0]     qsfp1_reset_l_0,"
+  #puts $fd_mod "    input [0:0]     qsfp0_lpmode_0,"
+  #puts $fd_mod "    input [0:0]     qsfp1_lpmode_0,"
+  #puts $fd_mod "    input [0:0]     qsfp0_int_l_0,"
+  #puts $fd_mod "    input [0:0]     qsfp1_int_l_0,"
+  #close $fd_mod
 
+  create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 gnd_pin
+  set_property CONFIG.CONST_VAL {0} [get_bd_cells gnd_pin]
+
+  #Make external qsfpX_int_l
+  connect_bd_net  [get_bd_pins cms_subsystem/qsfp0_int_l] [get_bd_pins gnd_pin/dout]
+  connect_bd_net  [get_bd_pins cms_subsystem/qsfp1_int_l] [get_bd_pins gnd_pin/dout]
   #Make external qsfpX_modprs_l
-  make_bd_pins_external  [get_bd_pins cms_subsystem/qsfp0_modprs_l]
-  make_bd_pins_external  [get_bd_pins cms_subsystem/qsfp1_modprs_l]
-  
-  #Make external qsfpX_lpmode
-  make_bd_pins_external  [get_bd_pins cms_subsystem/qsfp0_lpmode]
-  make_bd_pins_external  [get_bd_pins cms_subsystem/qsfp1_lpmode]
-  
-  #Make external qsfpX_lpmodsel_l
-  make_bd_pins_external  [get_bd_pins cms_subsystem/qsfp0_lpmodsel_l]
-  make_bd_pins_external  [get_bd_pins cms_subsystem/qsfp1_lpmodsel_l]
-  
-  #Make external qsfpX_reset_l
-  make_bd_pins_external  [get_bd_pins cms_subsystem/qsfp0_reset_l]
-  make_bd_pins_external  [get_bd_pins cms_subsystem/qsfp1_reset_l]
+  connect_bd_net  [get_bd_pins cms_subsystem/qsfp0_modprs_l] [get_bd_pins gnd_pin/dout]
+  connect_bd_net  [get_bd_pins cms_subsystem/qsfp1_modprs_l] [get_bd_pins gnd_pin/dout]
+  # #Make external qsfpX_lpmode
+  # connect_bd_net  [get_bd_pins cms_subsystem/qsfp0_lpmode] [get_bd_pins gnd_pin/dout]
+  # connect_bd_net  [get_bd_pins cms_subsystem/qsfp1_lpmode] [get_bd_pins gnd_pin/dout]
+  # #Make external qsfpX_lpmodsel_l
+  # connect_bd_net  [get_bd_pins cms_subsystem/qsfp0_lpmodsel_l] [get_bd_pins gnd_pin/dout]
+  # connect_bd_net  [get_bd_pins cms_subsystem/qsfp1_lpmodsel_l] [get_bd_pins gnd_pin/dout]
+  # #Make external qsfpX_reset_l
+  # connect_bd_net  [get_bd_pins cms_subsystem/qsfp0_reset_l] [get_bd_pins gnd_pin/dout]
+  # connect_bd_net  [get_bd_pins cms_subsystem/qsfp1_reset_l] [get_bd_pins gnd_pin/dout]
   
 } else {
   puterrors "Wrong target: Only Alveos U200/250, U280 and U55C support CMS"
@@ -162,5 +158,6 @@ if { ($g_board_part != "u280") || ($g_board_part != "u55c") || ($g_board_part !=
 
 #Append cms.sv interfaces file
 set PortList [lappend PortList $g_cms_file]
-
+incr slv_axilite_ninstances
 putmeeps "CMS created"
+save_bd_design
