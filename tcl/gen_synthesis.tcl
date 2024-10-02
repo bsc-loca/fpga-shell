@@ -60,6 +60,10 @@ proc synthesis { g_root_dir g_number_of_jobs} {
         puts [ clock format [ clock seconds ] -format %H:%M:%S ]
 
 	open_run synth_1
+	
+	# Enable ILA Automation
+    puts "INFO: Adding ILA Probes if any MARK_DEBUG attibute available"
+    source $g_root_dir/tcl/imp_ila.tcl 
 
 	set status [get_property STATUS [get_runs synth_1]]
 
