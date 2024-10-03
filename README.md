@@ -100,6 +100,18 @@ Acme is recommended, but any of the supported EA packages exposed at [Section 1.
 Also, every EA has a folder `fpga_shell/support` with an ea_url.txt file. This file contains the Git URL and the commit SHA. Modify the commit SHA at this location if you need to specify a particular commit.
 
 ---
+- To add ILA Core for debugging (Optional step)
+
+- Mark Signals to Debug
+
+    Mark all the signals of interest in the design using the vivado inline directive:
+    ```
+    (* dont_touch="true", mark_debug="true" *)  
+    ```
+    Note: Only the signal running on independent clock will be added to the ILA and the ILA is generated with that clock as the sampling clock. Errors may occur if the signals´ driving clock is not independent. For each signal the clock ports can be mentioned as an attribute, for example:
+    ```
+    (* dont_touch="true", mark_debug="true", MARK_DEBUG_CLOCK="meep_shell_inst/clk_wiz_1/inst/clk_out1" *)  
+    ```
 
 ```Bash
 make <board>        # In order to choose the FPGA board, where <board>=u55c / u280.
