@@ -208,6 +208,8 @@ proc ShellInterfaceDefinition { ShellInterfacesList ClockList DefinitionFile She
 				}
 				if { "${device}" == "SLV_AXI" } {						
 				}
+				if { "${device}" == "CMS" } {
+				}
 				set EnabledIntf [lappend EnabledIntf "$d_device"]					
 			}
 		}			

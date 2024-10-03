@@ -192,6 +192,7 @@ clean_accelerator:
 
 clean_synthesis: clean_implementation
 	@rm -rf dcp/synthesis.dcp
+	@git restore xdc/*
 
 clean_implementation:
 	@rm -rf dcp/implementation.dcp reports
@@ -201,4 +202,5 @@ clean_bitstream:
 
 clean_all: clean clean_binaries clean_bitstream
 	@rm -rf accelerator
+	@git restore xdc/*
 

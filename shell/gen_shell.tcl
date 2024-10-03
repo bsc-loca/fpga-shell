@@ -29,6 +29,7 @@ set g_Eth0_file     $g_root_dir/interfaces/ethernet0.sv
 set g_Eth1_file     $g_root_dir/interfaces/ethernet1.sv
 set g_Eth100Gb_file $g_root_dir/interfaces/eth100gb.sv
 set g_uart_file     $g_root_dir/interfaces/uart.sv
+set g_cms_file      $g_root_dir/interfaces/cms.sv
 
 # Create a list with the physical ports file handler
 # When an interface is detected, the file path is added to the list
@@ -65,13 +66,15 @@ foreach dicEntry $ShellEnabledIntf {
 		set DDR4entry $dicEntry
 		source $g_root_dir/shell/shell_ddr4.tcl
 		add_files -fileset [get_filesets constrs_1] "$g_root_dir/xdc/$g_board_part/ddr4_${g_board_part}.xdc"
+		set MemController "DDR"
 	} 
 	
 	if {[regexp -inline -all "HBM" $IntfName] ne "" } {
 		set HBMentry $dicEntry
-		source $g_root_dir/shell/shell_hbm.tcl		
+		source $g_root_dir/shell/shell_hbm.tcl	
+		set MemController "HBM"
 	}
-
+	
 	if {[regexp -inline -all "UART" $IntfName] ne "" } {
 		set UARTentry $dicEntry
 		source $g_root_dir/shell/shell_uart.tcl
@@ -114,7 +117,10 @@ foreach dicEntry $ShellEnabledIntf {
 		source $g_root_dir/shell/shell_slvaxi.tcl	
 		set_property CONFIG.ASSOCIATED_BUSIF [get_property CONFIG.ASSOCIATED_BUSIF [get_bd_ports /$g_SLVAXI_CLK]]$g_SLVAXI_ifname: [get_bd_ports /$g_SLVAXI_CLK]
 	}
-	
+	if {[regexp -inline -all "CMS" $IntfName] ne "" } {
+		source $g_root_dir/shell/shell_cms.tcl	
+		add_files -fileset [get_filesets constrs_1] "$g_root_dir/xdc/$g_board_part/cms_${g_board_part}.xdc"
+	}
 }
 
 #GEnerate IF GPIO: Inside the tcl
