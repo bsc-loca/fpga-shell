@@ -67,13 +67,6 @@ set ddr4_axi4 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm
    CONFIG.WUSER_BITS_PER_BYTE {0} \
    ] $ddr4_axi4
 
-  # if {[info exists ::env(PROTOSYN_RUNTIME_BOARD)] && $::env(PROTOSYN_RUNTIME_BOARD)=="alveou280"} {
-    set DDR4_InClk "9996"
-  # }
-  # if {[info exists ::env(PROTOSYN_RUNTIME_BOARD)] && $::env(PROTOSYN_RUNTIME_BOARD)=="alveou250"} {
-  #   set DDR4_InClk "3332"
-  # }
-
 # Create DDR MC instance if doesn't exsists already
 if { [info exists ddr_dev] == 0 || $ddr_dev != "ddr4_$DDR4ChNum"} {
   set PortList [lappend PortList $g_ddr4_file]
@@ -93,7 +86,7 @@ if { [info exists ddr_dev] == 0 || $ddr_dev != "ddr4_$DDR4ChNum"} {
    CONFIG.C0.DDR4_DataWidth {72} \
    CONFIG.C0.DDR4_EN_PARITY {true} \
    CONFIG.C0.DDR4_Ecc {true} \
-   CONFIG.C0.DDR4_InputClockPeriod $DDR4_InClk \
+   CONFIG.C0.DDR4_InputClockPeriod $ddr_freq \
    CONFIG.C0.DDR4_Mem_Add_Map {ROW_COLUMN_BANK_INTLV} \
    CONFIG.C0.DDR4_MemoryPart {MTA18ASF2G72PZ-2G3} \
    CONFIG.C0.DDR4_MemoryType {RDIMMs} \
@@ -106,6 +99,7 @@ if { [info exists ddr_dev] == 0 || $ddr_dev != "ddr4_$DDR4ChNum"} {
 # Input CLK
 make_bd_intf_pins_external  [get_bd_intf_pins ${ddr_dev}/C0_SYS_CLK]
 set_property name sysclk${DDR4ChNum} [get_bd_intf_ports C0_SYS_CLK_0]
+set_property -dict [list CONFIG.FREQ_HZ $FREQ_HZ] [get_bd_intf_ports sysclk${DDR4ChNum}]
 
 #DDR io interface
 make_bd_intf_pins_external  [get_bd_intf_pins ${ddr_dev}/C0_DDR4]

@@ -34,9 +34,11 @@ QUICK_IMPL   ?=
 U200_PART    = "xcu200-fsgd2104-2-e"
 U280_PART    = "xcu280-fsvh2892-2L-e"
 U55C_PART    = "xcu55c-fsvh2892-2L-e"
+U250_PART    = "xcu250-figd2104-2L-e"
 U200_BOARD   = "u200"
 U280_BOARD   = "u280"
 U55C_BOARD   = "u55c"
+U250_BOARD   = "u250"
 #SHELL := /bin/bash
 
 # applying extra Xilinx licenses in case they are needed
@@ -55,6 +57,9 @@ u280: clean
 
 u55c: clean
 	@($(SH_DIR)/extract_part.sh $(U55C_BOARD))
+
+u250: clean
+	@($(SH_DIR)/extract_part.sh $(U250_BOARD) $(U250_PART))
 
 vcu128:
 	@$(SH_DIR)/extract_part.sh $(VCU128_PART) $(VCU128_BOARD)
