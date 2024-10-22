@@ -24,7 +24,7 @@ YAML_FILE    =  $(ROOT_DIR)/.gitlab-ci.yml
 PROJECT_DIR  =  $(ROOT_DIR)/project
 BINARIES_DIR =  $(ROOT_DIR)/binaries
 # taking default Xilinx install path if not propagated from environment var
-VIVADO_VER    ?= 2023.2
+VIVADO_VER    ?= 2024.1
 XILINX_VIVADO ?= /opt/Xilinx/Vivado/$(VIVADO_VER)
 LD_PRELOAD_PATH = LD_PRELOAD=/lib/x86_64-linux-gnu/libudev.so.1
 VIVADO_XLNX   :=   $(XILINX_VIVADO)/bin/vivado
@@ -34,9 +34,11 @@ QUICK_IMPL   ?=
 U200_PART    = "xcu200-fsgd2104-2-e"
 U280_PART    = "xcu280-fsvh2892-2L-e"
 U55C_PART    = "xcu55c-fsvh2892-2L-e"
+U250_PART    = "xcu250-figd2104-2L-e"
 U200_BOARD   = "u200"
 U280_BOARD   = "u280"
 U55C_BOARD   = "u55c"
+U250_BOARD   = "u250"
 #SHELL := /bin/bash
 
 # applying extra Xilinx licenses in case they are needed
@@ -55,6 +57,9 @@ u280: clean
 
 u55c: clean
 	@($(SH_DIR)/extract_part.sh $(U55C_BOARD))
+
+u250: clean
+	@($(SH_DIR)/extract_part.sh $(U250_BOARD) $(U250_PART))
 
 vcu128:
 	@$(SH_DIR)/extract_part.sh $(VCU128_PART) $(VCU128_BOARD)
@@ -187,6 +192,7 @@ clean_accelerator:
 
 clean_synthesis: clean_implementation
 	@rm -rf dcp/synthesis.dcp
+	@git restore xdc/*
 
 clean_implementation:
 	@rm -rf dcp/implementation.dcp reports
@@ -196,4 +202,5 @@ clean_bitstream:
 
 clean_all: clean clean_binaries clean_bitstream
 	@rm -rf accelerator
+	@git restore xdc/*
 

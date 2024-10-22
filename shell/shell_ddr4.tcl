@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Author: Daniel J.Mazure, BSC-CNS
-# Date: 22.02.2022
-# Description: 
-
+# Author: Joan Teruel Jurado, BSC-CNS
+# Date: 02.05.2024
+# Description: Standalone DDR4 implementation (mutually exclusive with HBM)
 
 putwarnings $DDR4entry
 
@@ -24,7 +23,8 @@ set DDR4name   [dict get $DDR4entry SyncClk Name]
 set DDR4intf   [dict get $DDR4entry IntfLabel]
 set DDR4Ready  [dict get $DDR4entry CalibDone]
 set DDR4ChNum  [dict get $DDR4entry EnChannel]
-set DDR4ClkNm  [dict get $DDR4entry ClkName]
+set DDR4ClkNm  [dict get $DDR4entry SyncClk Label]
+set DDR4axi    [dict get $DDR4entry AxiIntf]
 
 set DDR4addrWidth [dict get $DDR4entry AxiAddrWidth]
 set DDR4dataWidth [dict get $DDR4entry AxiDataWidth]
@@ -32,53 +32,53 @@ set DDR4idWidth   [dict get $DDR4entry AxiIdWidth]
 set DDR4userWidth [dict get $DDR4entry AxiUserWidth]
 ## CAUTION: Axi user signals are not supported as input to the protocol 
 ## converter to DDR4. Hardcoded to 0
-set DDR4userWidth 0
 
-set PortList [lappend PortList $g_ddr4_file]
+set DDR4axiProt  [string replace $DDR4axi   [string first "-" $DDR4axi] end]
+set DDR4ataWidth [string replace $DDR4axi 0 [string first "-" $DDR4axi]    ]
 
 
 putmeeps "Creating DDR4 instance..."
 ### TODO: Region, prot and others can be extracted as the other widths
 set ddr4_axi4 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 $DDR4intf ]
   set_property -dict [ list \
-   CONFIG.ADDR_WIDTH $DDR4addrWidth \
-   CONFIG.ARUSER_WIDTH $DDR4userWidth \
-   CONFIG.AWUSER_WIDTH $DDR4userWidth \
-   CONFIG.BUSER_WIDTH $DDR4userWidth \
-   CONFIG.DATA_WIDTH $DDR4dataWidth \
-   CONFIG.FREQ_HZ $DDR4Freq \
+   CONFIG.ADDR_WIDTH $DDRaddrWidth \
+   CONFIG.ARUSER_WIDTH {0} \
+   CONFIG.AWUSER_WIDTH {0} \
+   CONFIG.BUSER_WIDTH {0} \
+   CONFIG.DATA_WIDTH $DDR4ataWidth \
    CONFIG.HAS_BRESP {1} \
    CONFIG.HAS_BURST {1} \
-   CONFIG.HAS_CACHE {1} \
-   CONFIG.HAS_LOCK {1} \
-   CONFIG.HAS_PROT {1} \
-   CONFIG.HAS_QOS {1} \
-   CONFIG.HAS_REGION {1} \
+   CONFIG.HAS_CACHE {0} \
+   CONFIG.HAS_LOCK {0} \
+   CONFIG.HAS_PROT {0} \
+   CONFIG.HAS_QOS {0} \
+   CONFIG.HAS_REGION {0} \
    CONFIG.HAS_RRESP {1} \
    CONFIG.HAS_WSTRB {1} \
-   CONFIG.ID_WIDTH $DDR4idWidth \
    CONFIG.MAX_BURST_LENGTH {256} \
-   CONFIG.NUM_READ_OUTSTANDING {1} \
-   CONFIG.NUM_READ_THREADS {1} \
-   CONFIG.NUM_WRITE_OUTSTANDING {1} \
-   CONFIG.NUM_WRITE_THREADS {1} \
-   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.NUM_READ_OUTSTANDING {32} \
+   CONFIG.NUM_READ_THREADS {16} \
+   CONFIG.NUM_WRITE_OUTSTANDING {32} \
+   CONFIG.NUM_WRITE_THREADS {16} \
+   CONFIG.PROTOCOL $DDR4axiProt \
    CONFIG.READ_WRITE_MODE {READ_WRITE} \
    CONFIG.RUSER_BITS_PER_BYTE {0} \
-   CONFIG.RUSER_WIDTH $DDR4userWidth \
    CONFIG.SUPPORTS_NARROW_BURST {1} \
    CONFIG.WUSER_BITS_PER_BYTE {0} \
-   CONFIG.WUSER_WIDTH $DDR4userWidth \
    ] $ddr4_axi4
 
-
+# Create DDR MC instance if doesn't exsists already
+if { [info exists ddr_dev] == 0 || $ddr_dev != "ddr4_$DDR4ChNum"} {
+  set PortList [lappend PortList $g_ddr4_file]
   set ddr_dev ddr4_${DDR4ChNum}
 	
   # Create instance: ddr4_0, and set properties
   set ddr4_inst [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4:2.2 $ddr_dev ]
   set_property -dict [ list \
-   CONFIG.C0.DDR4_AxiAddressWidth {34} \
+   CONFIG.C0.DDR4_AUTO_AP_COL_A3 {true} \
+   CONFIG.C0.DDR4_AxiAddressWidth $DDRaddrWidth \
    CONFIG.C0.DDR4_AxiDataWidth {512} \
+   CONFIG.C0.DDR4_CLKFBOUT_MULT {15} \
    CONFIG.C0.DDR4_CLKOUT0_DIVIDE {5} \
    CONFIG.C0.DDR4_CasLatency {17} \
    CONFIG.C0.DDR4_CasWriteLatency {12} \
@@ -86,85 +86,77 @@ set ddr4_axi4 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm
    CONFIG.C0.DDR4_DataWidth {72} \
    CONFIG.C0.DDR4_EN_PARITY {true} \
    CONFIG.C0.DDR4_Ecc {true} \
-   CONFIG.C0.DDR4_InputClockPeriod {3331} \
+   CONFIG.C0.DDR4_InputClockPeriod $ddr_freq \
+   CONFIG.C0.DDR4_Mem_Add_Map {ROW_COLUMN_BANK_INTLV} \
    CONFIG.C0.DDR4_MemoryPart {MTA18ASF2G72PZ-2G3} \
    CONFIG.C0.DDR4_MemoryType {RDIMMs} \
    CONFIG.C0.DDR4_TimePeriod {833} \
-   CONFIG.C0.DDR4_Mem_Add_Map {ROW_COLUMN_BANK_INTLV} \
-   CONFIG.C0.DDR4_AUTO_AP_COL_A3 {true} \
+   CONFIG.C0_CLOCK_BOARD_INTERFACE {Custom} \
+   CONFIG.C0_DDR4_BOARD_INTERFACE {Custom} \
+   CONFIG.RESET_BOARD_INTERFACE {Custom} \
  ] $ddr4_inst
-
-set ddrUiClkPin [get_bd_pins ${ddr_dev}/c0_ddr4_ui_clk]
-
-save_bd_design
 
 # Input CLK
 make_bd_intf_pins_external  [get_bd_intf_pins ${ddr_dev}/C0_SYS_CLK]
 set_property name sysclk${DDR4ChNum} [get_bd_intf_ports C0_SYS_CLK_0]
-set_property CONFIG.FREQ_HZ $FREQ_HZ [get_bd_intf_ports /sysclk${DDR4ChNum}]
-
+set_property -dict [list CONFIG.FREQ_HZ $FREQ_HZ] [get_bd_intf_ports sysclk${DDR4ChNum}]
 
 #DDR io interface
 make_bd_intf_pins_external  [get_bd_intf_pins ${ddr_dev}/C0_DDR4]
 set_property name ddr4_sdram_c${DDR4ChNum} [get_bd_intf_ports C0_DDR4_0]
 
-create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_pcie2ddr
-set_property -dict [list CONFIG.NUM_SI {2} CONFIG.NUM_MI {1}] [get_bd_cells axi_interconnect_pcie2ddr]
-
-
-# Clocks
-connect_bd_net $ddrUiClkPin  [get_bd_pins axi_interconnect_pcie2ddr/ACLK]
-connect_bd_net $ddrUiClkPin  [get_bd_pins axi_interconnect_pcie2ddr/M00_ACLK]
-connect_bd_net $pcie_clk_pin [get_bd_pins axi_interconnect_pcie2ddr/S00_ACLK]
-connect_bd_net $pcie_rst_pin [get_bd_pins axi_interconnect_pcie2ddr/S00_ARESETN]
-
-
-
-connect_bd_intf_net [get_bd_intf_pins qdma_0/M_AXI] [get_bd_intf_pins axi_interconnect_pcie2ddr/S00_AXI]
-connect_bd_intf_net [get_bd_intf_ports $DDR4intf] [get_bd_intf_pins axi_interconnect_pcie2ddr/S01_AXI]
-connect_bd_intf_net [get_bd_intf_pins axi_interconnect_pcie2ddr/M00_AXI] [get_bd_intf_pins ddr4_${DDR4ChNum}/C0_DDR4_S_AXI]
-connect_bd_net [get_bd_pins axi_interconnect_pcie2ddr/S01_ACLK] [get_bd_pins ddr4_${DDR4ChNum}/c0_ddr4_ui_clk]
-
-
-create_bd_port -dir O -type clk c0_ddr4_ui_clk
-connect_bd_net $ddrUiClkPin [get_bd_ports c0_ddr4_ui_clk]
-
-set_property name $DDR4ClkNm [get_bd_ports c0_ddr4_ui_clk]
-
-# IMPORTANT: GET the UI clock frequency to propagate its value to the incoming associated AXI interface (generally, mem_axi4)
-# set intfFreq [get_property CONFIG.FREQ_HZ [get_bd_pins $ddrUiClkPin]]
-# set_property CONFIG.FREQ_HZ $intfFreq [get_bd_intf_ports /sysclk${DDR4ChNum}]
-# Connnect the DDR4 AXI Lite interface to the same PCIe interconnect.
-
 # Resets
-
-#connect_bd_net [get_bd_pins ddr4_${DDR4ChNum}/c0_init_calib_complete] [get_bd_pins axi_interconnect_pcie2ddr/ARESETN]
-set ddrResetBlock proc_sys_reset_ddr_${DDR4ChNum}
-create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 $ddrResetBlock
-
-connect_bd_net [get_bd_pins ddr4_${DDR4ChNum}/c0_ddr4_ui_clk] [get_bd_pins $ddrResetBlock/slowest_sync_clk]
-connect_bd_net [get_bd_pins $ddrResetBlock/peripheral_aresetn] [get_bd_pins ddr4_${DDR4ChNum}/c0_ddr4_aresetn]
-connect_bd_net [get_bd_pins $ddrResetBlock/interconnect_aresetn] [get_bd_pins axi_interconnect_pcie2ddr/ARESETN]
-connect_bd_net [get_bd_pins $ddrResetBlock/peripheral_aresetn] [get_bd_pins axi_interconnect_pcie2ddr/M00_ARESETN]
-
-make_bd_pins_external  [get_bd_pins ddr4_${DDR4ChNum}/c0_init_calib_complete]
-set_property name $DDR4Ready [get_bd_ports c0_init_calib_complete_0]
+set ddr_calib_sync [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 ddr_calib_sync ]
+set_property -dict [ list \
+CONFIG.C_AUX_RESET_HIGH {0} \
+] $ddr_calib_sync
+connect_bd_net [get_bd_pins ddr_calib_sync/ext_reset_in] [get_bd_pins ddr_calib_sync/aux_reset_in] [get_bd_pins ddr4_${DDR4ChNum}/c0_init_calib_complete]
+connect_bd_net [get_bd_pins ddr_calib_sync/slowest_sync_clk] [get_bd_pins rst_ea_$DDR4ClkNm/slowest_sync_clk]
+connect_bd_net [get_bd_pins ddr_calib_sync/dcm_locked] [get_bd_pins clk_wiz_1/locked]
+make_bd_pins_external [get_bd_pins ddr_calib_sync/peripheral_aresetn]
+set_property name $DDR4Ready [get_bd_ports peripheral_aresetn_0]
 
 create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_ddrRst
 set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] [get_bd_cells util_vector_logic_ddrRst]
-connect_bd_net [get_bd_ports resetn] [get_bd_pins util_vector_logic_ddrRst/Op1]
-connect_bd_net [get_bd_pins util_vector_logic_ddrRst/Res] [get_bd_pins ddr4_${DDR4ChNum}/sys_rst]
-connect_bd_net [get_bd_pins axi_interconnect_pcie2ddr/S01_ARESETN] [get_bd_pins ${ddrResetBlock}/peripheral_aresetn]
-connect_bd_net [get_bd_ports resetn] [get_bd_pins ${ddrResetBlock}/ext_reset_in]
+connect_bd_net [get_bd_pins util_vector_logic_ddrRst/Op1] [get_bd_pins $ddr_dev/c0_ddr4_ui_clk_sync_rst]
+connect_bd_net [get_bd_pins util_vector_logic_ddrRst/Res] [get_bd_pins $ddr_dev/c0_ddr4_aresetn]
+connect_bd_net [get_bd_pins rst_ea_$DDR4ClkNm/peripheral_reset] [get_bd_pins ddr4_${DDR4ChNum}/sys_rst]
 
 # Workaround to the uneeded AXIL DDR ctrl
-make_bd_intf_pins_external  [get_bd_intf_pins ddr4_${DDR4ChNum}/C0_DDR4_S_AXI_CTRL]
+# Create instance: gndx32, and set properties
+  set gndx32 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 gndx32 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0} \
+   CONFIG.CONST_WIDTH {32} \
+ ] $gndx32
+connect_bd_net [get_bd_pins gndx32/dout] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_araddr] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_awaddr] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_wdata]
 
+#Secondary ports connection which need to be connected to zero
 # Create the HBM cattrip ground connection
 set hbm_cattrip [ create_bd_port -dir O -from 0 -to 0 hbm_cattrip ]
 create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 gnd_cattrip
 set_property -dict [list CONFIG.CONST_VAL {0}] [get_bd_cells gnd_cattrip]
 connect_bd_net [get_bd_ports hbm_cattrip] [get_bd_pins gnd_cattrip/dout]
+connect_bd_net [get_bd_pins gnd_cattrip/dout] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_arvalid] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_awvalid] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_bready] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_rready] [get_bd_pins $ddr_dev/c0_ddr4_s_axi_ctrl_wvalid]
+}
 
-save_bd_design
+if { $PCIeDMA == "dma" && $PCIedmaMem == "ddr" && $PCIeDMAdone == 0} {
+  connect_bd_net [get_bd_pins axi_xbar_pcie/ACLK]     [get_bd_pins $ddr_dev/c0_ddr4_ui_clk]
+  connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ACLK] [get_bd_pins $ddr_dev/c0_ddr4_ui_clk]
+  connect_bd_net [get_bd_pins axi_xbar_pcie/ARESETN]     [get_bd_pins util_vector_logic_ddrRst/Res]
+  connect_bd_net [get_bd_pins axi_xbar_pcie/M00_ARESETN] [get_bd_pins util_vector_logic_ddrRst/Res]
+  connect_bd_intf_net [get_bd_intf_pins axi_xbar_pcie/M00_AXI] [get_bd_intf_pins $ddr_dev/C0_DDR4_S_AXI]
+  set PCIeDMAdone 1
+}
 
+#Modify AXI INTERCONNECT to add external AXI
+set_property -dict [list CONFIG.NUM_SI [expr $mst_axi_ninstances + 1]] $axi_xbar_pcie
+connect_bd_net [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ACLK]    [get_bd_pins rst_ea_$DDR4ClkNm/slowest_sync_clk]
+connect_bd_net [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ARESETN] [get_bd_pins rst_ea_$DDR4ClkNm/peripheral_aresetn]
+connect_bd_intf_net [get_bd_intf_ports $DDR4intf] [get_bd_intf_pins axi_xbar_pcie/S0${mst_axi_ninstances}_AXI]
+incr mst_axi_ninstances
+
+#Lets associate a clock to the frequency of the mem_axi bus
+set_property CONFIG.ASSOCIATED_BUSIF [get_property CONFIG.ASSOCIATED_BUSIF [get_bd_ports /$DDR4name]]$DDR4intf: [get_bd_ports /$DDR4name]
+
+save_bd_design 

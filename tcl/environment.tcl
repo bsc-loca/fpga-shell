@@ -35,7 +35,7 @@ set g_number_of_jobs 8
 # This list the shell capabilities. Add more interfaces when they 
 # are ready to be implemented. XDC FPGA Board file could be used.
 #################################################################
-set ShellInterfacesList [list PCIE DDR4 HBM AURORA ETHERNET UART JTAG BROM BRAM SLV_AXI] 
+set ShellInterfacesList [list PCIE DDR4 HBM AURORA ETHERNET UART JTAG BROM BRAM SLV_AXI CMS] 
 
 ## TODO: Add JTAG?
 ## List here the physical interfaces. Lowercase as they are connected
@@ -53,6 +53,9 @@ if { $g_board_part == "u200" }  {
    set g_fpga_part "xcu200-fsgd2104-2-e"
    set pcieBlockLoc "X1Y2"
    set BOARD_FREQ "156.250"
+} elseif { $g_board_part == "u250" } {
+   set pcieBlockLoc "X0Y1"
+   set BOARD_FREQ "300.000"
 } else {
    set pcieBlockLoc "PCIE4C_X1Y0"
    set BOARD_FREQ "100.000"
@@ -71,12 +74,17 @@ if { $g_board_part == "u200"} {
 	set FREQ_HZ  "300000000" 
     set ddr_part "MTA18ASF2G72PZ-2G4"
 
+} elseif { $g_board_part == "u250" } {
+
+   set ddr_freq "3332"
+	set FREQ_HZ "300000000"
+   set DDRaddrWidth "34"
+
 } elseif { $g_board_part == "u280" } {
 
-	# Placeholders, need to be reviewed
-	set ddr_freq "3334"
+   set ddr_freq "9996"
 	set FREQ_HZ "100000000"
-
+   set DDRaddrWidth "34"
 
 } elseif { $g_board_part == "vcu128"} {
 
