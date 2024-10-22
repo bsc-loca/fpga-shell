@@ -23,8 +23,25 @@ set ETHClkIf   [dict get $ETHentry SyncClk Name]
 set ETHintf    [dict get $ETHentry IntfLabel]
 set ETHqsfp    [dict get $ETHentry qsfpPort]
 set ETHdmaMem  [dict get $ETHentry dmaMem]
-set EthHBMCh   [dict get $ETHentry HBMChan]
 set Ethaxi     [dict get $ETHentry AxiIntf]
+
+set MemDelimIdx [string first "-" $ETHdmaMem]
+if {$MemDelimIdx >= 0} {
+  set EthHBMCh  [string replace $ETHdmaMem 0 $MemDelimIdx    ]
+  set ETHdmaMem [string replace $ETHdmaMem   $MemDelimIdx end]
+} else {
+  set EthHBMCh [dict get $ETHentry HBMChan]
+}
+
+if {$ETHdmaMem == "hbm"} {
+  set ETHdmaAddrWidth $HBMaddrWidth
+} elseif {$ETHdmaMem == "ddr"} {
+  set ETHdmaAddrWidth $DDRaddrWidth
+} else {
+  set ETHdmaAddrWidth ""
+}
+
+putmeeps "100GbE DMA type is set as `$ETHdmaMem` with DMA external address width `$ETHdmaAddrWidth` (for HBM channel# `$EthHBMCh` is used as initial)"
 
 set ETHaddrWidth [dict get $ETHentry AxiAddrWidth]
 set ETHdataWidth [dict get $ETHentry AxiDataWidth]
@@ -47,7 +64,7 @@ putdebugs "ETHirq       $ETHirq"
 
 ### Initialize the IPs
 putmeeps "Packaging ETH IP..."
-exec vivado -mode batch -nolog -nojournal -notrace -source $g_root_dir/ip/100GbEthernet/tcl/gen_project.tcl -tclargs $g_board_part $ETHqsfp $ETHdmaMem $ETHFreq $Ethaxi
+exec vivado -mode batch -nolog -nojournal -notrace -source $g_root_dir/ip/100GbEthernet/tcl/gen_project.tcl -tclargs $g_board_part $ETHqsfp $ETHdmaMem $ETHFreq $Ethaxi $ETHdmaAddrWidth
 putmeeps "... Done."
 update_ip_catalog -rebuild
 
@@ -166,6 +183,27 @@ if { ${ETHdmaMem} eq "hbm" } {
   connect_bd_net [get_bd_pins hbm_0/AXI_${TxHBMCh}_ARESET_N] [get_bd_pins ${EthHierName}/tx_rstn]
   connect_bd_net [get_bd_pins hbm_0/AXI_${RxHBMCh}_ARESET_N] [get_bd_pins ${EthHierName}/rx_rstn]
   connect_bd_net [get_bd_pins hbm_0/AXI_${SgHBMCh}_ARESET_N] [get_bd_pins ${EthHierName}/s_axi_resetn]
+  
+} elseif { ${ETHdmaMem} eq "ddr" } {
+
+  #Modify the interconnect to fit three additional interfaces
+  set_property -dict [list CONFIG.NUM_SI [expr $mst_axi_ninstances + 3]] $axi_xbar_pcie
+
+  #Connect rx to their respective new Axi_master bus in interconnect
+  connect_bd_intf_net [get_bd_intf_pins ${EthHierName}/m_axi_rx] [get_bd_intf_pins axi_xbar_pcie/S0${mst_axi_ninstances}_AXI]
+  connect_bd_net [get_bd_pins ${EthHierName}/rx_clk] [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ACLK]
+  connect_bd_net [get_bd_pins ${EthHierName}/rx_rstn] [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ARESETN]
+  incr mst_axi_ninstances
+  #Connect tx to their respective new Axi_master bus in interconnect
+  connect_bd_intf_net [get_bd_intf_pins ${EthHierName}/m_axi_tx] [get_bd_intf_pins axi_xbar_pcie/S0${mst_axi_ninstances}_AXI]
+  connect_bd_net [get_bd_pins ${EthHierName}/tx_clk] [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ACLK]
+  connect_bd_net [get_bd_pins ${EthHierName}/tx_rstn] [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ARESETN]
+  incr mst_axi_ninstances
+  #Connect sg to their respective new Axi_master bus in interconnect
+  connect_bd_intf_net [get_bd_intf_pins ${EthHierName}/m_axi_sg] [get_bd_intf_pins axi_xbar_pcie/S0${mst_axi_ninstances}_AXI]
+  connect_bd_net [get_bd_pins ${EthHierName}/s_axi_clk] [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ACLK]
+  connect_bd_net [get_bd_pins ${EthHierName}/s_axi_resetn] [get_bd_pins axi_xbar_pcie/S0${mst_axi_ninstances}_ARESETN]  
+  incr mst_axi_ninstances
 }
 
 save_bd_design
